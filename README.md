@@ -9,7 +9,9 @@ Features:
 
 Schematics for the hardware can be found [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/478886ba8ccb8f31c0db583b10b282738d822965/docs/Schematic_GarageOpener.pdf). The schematics is made using [EasyEDA](https://easyeda.com/)
 
-STL files for the housing can be found [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/2dc0cb2f88ffee0f719a3f48c10d991301077dc2/docs/GarageOpenerTop.stl) and [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/2dc0cb2f88ffee0f719a3f48c10d991301077dc2/docs/GarageOpenerBottom.stl).
+STL files for the housing can be found [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/2dc0cb2f88ffee0f719a3f48c10d991301077dc2/docs/GarageOpenerTop.stl), [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/2dc0cb2f88ffee0f719a3f48c10d991301077dc2/docs/GarageOpenerBottom.stl) and [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/d89407ebe4e6d4afd1c8a517a600cc80013ba3aa/docs/GarageOpenerBottomButton.stl).
+
+An overview of how to assemble the housing can be found [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/d89407ebe4e6d4afd1c8a517a600cc80013ba3aa/docs/GarageOpenerCompleteNotPrintable.stl).
 
 
 
