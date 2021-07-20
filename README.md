@@ -1,12 +1,17 @@
 # ESP32 Homekit garage door opener
 ## Introduction
 This is a homekit garage opener for the ESP32. It's a bit a work in progress, but it should mostly work.
-Schematics for the hardware can be found [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/478886ba8ccb8f31c0db583b10b282738d822965/docs/Schematic_GarageOpener.pdf).
 
 Features:
 * Controls a relay that opens/closes the door.
 * Uses a reed sensor to detect if the door is open/closed.
 * Contains a DHT22 temperature/humidity sensor.
+
+Schematics for the hardware can be found [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/478886ba8ccb8f31c0db583b10b282738d822965/docs/Schematic_GarageOpener.pdf).
+
+STL files for the housing can be found [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/2dc0cb2f88ffee0f719a3f48c10d991301077dc2/docs/GarageOpenerTop.stl) and [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/2dc0cb2f88ffee0f719a3f48c10d991301077dc2/docs/GarageOpenerBottom.stl).
+
+
 
 ## Getting started
 ### Setup host environment
