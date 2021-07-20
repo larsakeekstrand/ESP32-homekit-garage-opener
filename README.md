@@ -9,7 +9,7 @@ Features:
 * Contains a DHT22 temperature/humidity sensor.
 
 ## Getting started
-## Setup host environment
+### Setup host environment
 
 Set up the host environment and Espressif esp-idf using the instructions given [here](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html).
 
