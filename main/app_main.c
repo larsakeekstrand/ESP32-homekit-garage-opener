@@ -32,6 +32,10 @@ static const char *TAG = "HAP Garage";
 #define GARAGE_TASK_STACKSIZE 4 * 1024
 #define GARAGE_TASK_NAME      "hap_garage"
 
+#define DHT_TASK_PRIORITY  1
+#define DHT_TASK_STACKSIZE 4 * 1024
+#define DHT_TASK_NAME      "hap_dht"
+
 /* Reset network credentials if button is pressed for more than 3 seconds and then released */
 #define RESET_NETWORK_BUTTON_TIMEOUT        3
 
@@ -84,6 +88,10 @@ void set_door_state(uint8_t state);
 //
 esp_timer_handle_t oneshot_timer;
 hap_acc_t *accessory;
+
+float current_temperature = 0.0;
+float current_humidity = 0.0;
+
 
 // One shot timer definition
 const esp_timer_create_args_t oneshot_timer_args = {
@@ -271,7 +279,7 @@ static void garage_hap_event_handler(void* arg, esp_event_base_t event_base, int
 // Read door sensor status
 //
 uint8_t read_door_sensor() {
-  return (gpio_get_level(DOOR_SENSOR_GPIO));
+  return (gpio_get_level(DOOR_SENSOR_GPIO)^1);
 }
 
 //
@@ -330,6 +338,40 @@ void send_target_door_state(uint8_t state) {
 }
 
 //
+// Send update of current temperature
+//
+void send_current_temperature() {
+  hap_val_t temperature = {
+      .f = current_temperature,
+  };
+  hap_serv_t *service;
+  hap_char_t *handle;
+
+  service = hap_acc_get_serv_by_uuid(accessory, HAP_SERV_UUID_TEMPERATURE_SENSOR);
+  handle = hap_serv_get_char_by_uuid(service, HAP_CHAR_UUID_CURRENT_TEMPERATURE);
+
+  ESP_LOGI(TAG, "Sending current temperature [%f]", temperature.f);
+  hap_char_update_val(handle, &temperature);
+}
+
+//
+// Send update of current humidity
+//
+void send_current_humidity() {
+  hap_val_t humidity = {
+      .f = current_humidity,
+  };
+  hap_serv_t *service;
+  hap_char_t *handle;
+
+  service = hap_acc_get_serv_by_uuid(accessory, HAP_SERV_UUID_HUMIDITY_SENSOR);
+  handle = hap_serv_get_char_by_uuid(service, HAP_CHAR_UUID_CURRENT_RELATIVE_HUMIDITY);
+
+  ESP_LOGI(TAG, "Sending current humidity [%f]", humidity.f);
+  hap_char_update_val(handle, &humidity);
+}
+
+//
 // Set door state
 //
 void set_door_state(uint8_t state) {
@@ -347,7 +389,6 @@ static int garage_read(hap_char_t *hc, hap_status_t *status_code, void *serv_pri
   if (hap_req_get_ctrl_id(read_priv)) {
     ESP_LOGI(TAG, "Received read from %s", hap_req_get_ctrl_id(read_priv));
     ESP_LOGI(TAG, "Received hap_char_get_type_uuid: %s", hap_char_get_type_uuid(hc));
-
   }
 
   if (!strcmp(hap_char_get_type_uuid(hc), HAP_CHAR_UUID_TARGET_DOOR_STATE)) {
@@ -393,6 +434,19 @@ static int garage_read(hap_char_t *hc, hap_status_t *status_code, void *serv_pri
   return HAP_SUCCESS;
 }
 
+
+static int dht_read(hap_char_t *hc, hap_status_t *status_code, void *serv_priv, void *read_priv) {
+  const hap_val_t *cur_val = hap_char_get_val(hc);
+  //hap_val_t new_val;
+
+  //new_val.f = temperature;
+  //hap_char_update_val(hc, &new_val);
+
+  //*status_code = HAP_STATUS_SUCCESS;
+
+  return HAP_SUCCESS;
+}
+
 //
 // Incoming write
 //
@@ -427,6 +481,9 @@ static void garage_thread_entry(void *p)
 {
     //hap_acc_t *accessory;
     hap_serv_t *service;
+    hap_serv_t *temp_service;
+    hap_serv_t *hum_service;
+
     uint8_t current_sensor_value, old_sensor_value;
 
     // Setup GPIO
@@ -478,6 +535,15 @@ static void garage_thread_entry(void *p)
 
     // Add the service to the Accessory Object
     hap_acc_add_serv(accessory, service);
+
+    temp_service = hap_serv_temperature_sensor_create((float)10);
+    hap_serv_add_char(temp_service, hap_char_name_create("Temperature"));
+    hap_serv_set_read_cb(temp_service, dht_read);
+    hap_acc_add_serv(accessory, temp_service);
+    hum_service = hap_serv_humidity_sensor_create((float)20);
+    hap_serv_add_char(hum_service, hap_char_name_create("Humidity"));
+    hap_serv_set_read_cb(hum_service, dht_read);
+    hap_acc_add_serv(accessory, hum_service);
 
     /* Create the Firmware Upgrade HomeKit Custom Service.
      * Please refer the FW Upgrade documentation under components/homekit/extras/include/hap_fw_upgrade.h
@@ -546,14 +612,6 @@ static void garage_thread_entry(void *p)
     // Cleanup timer_handler
     esp_timer_create(&oneshot_timer_args, &oneshot_timer);
     //esp_timer_start_once(oneshot_timer, DOOR_MOVING_MAXTIME);
-
-    static float temperature = 0.0;
-    static float humidity = 0.0;
-
-    if (dht_read_float_data(sensor_type, DHT_SENSOR_GPIO, &humidity, &temperature) == ESP_OK)
-      ESP_LOGI(TAG, "Read Temp: %0.01fC Humidity: %0.01f%% ", temperature, humidity);
-    else
-      ESP_LOGE(TAG, "Could not read data from DHT sensor on GPIO %d", DHT_SENSOR_GPIO);
 
     uint32_t io_num = DOOR_SENSOR_GPIO;
 
@@ -668,9 +726,35 @@ static void garage_thread_entry(void *p)
     vTaskDelete(NULL);
 }
 
+//
+// Temp and humidity read task
+//
+static void dht_thread_entry(void *p)
+{
 
+  while (1) {
 
+    if (dht_read_float_data(sensor_type, DHT_SENSOR_GPIO, &current_humidity, &current_temperature) == ESP_OK)
+      ESP_LOGI(TAG, "Read Temp: %0.01fC Humidity: %0.01f%% ", current_humidity, current_temperature);
+    else
+      ESP_LOGE(TAG, "Could not read data from DHT sensor on GPIO %d", DHT_SENSOR_GPIO);
+
+    send_current_temperature();
+    send_current_humidity();
+    // Sleep for a while
+    vTaskDelay(30000 / portTICK_RATE_MS);
+  }
+
+  /* The task ends here. The read/write callbacks will be invoked by the HAP Framework */
+  vTaskDelete(NULL);
+
+}
+
+//
+// Start here
+//
 void app_main()
 {
     xTaskCreate(garage_thread_entry, GARAGE_TASK_NAME, GARAGE_TASK_STACKSIZE, NULL, GARAGE_TASK_PRIORITY, NULL);
+    xTaskCreate(dht_thread_entry, DHT_TASK_NAME, DHT_TASK_STACKSIZE, NULL, DHT_TASK_PRIORITY, NULL);
 }
