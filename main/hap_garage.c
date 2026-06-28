@@ -9,7 +9,6 @@
 #include <hap.h>
 #include <hap_apple_servs.h>
 #include <hap_apple_chars.h>
-#include <hap_fw_upgrade.h>
 #include <iot_button.h>
 #include <app_wifi.h>
 #include <app_hap_setup_payload.h>
@@ -20,9 +19,6 @@
 #include "board.h"
 
 static const char *TAG = "HAP Garage";
-
-/*  Required for server verification during OTA, PEM format as string  */
-char server_cert[] = {};
 
 static hap_acc_t *accessory;
 
@@ -306,18 +302,6 @@ void hap_garage_init(void) {
     hap_serv_add_char(hum_service, hap_char_name_create("Humidity"));
     hap_serv_set_read_cb(hum_service, dht_read);
     hap_acc_add_serv(accessory, hum_service);
-
-    /* Create the Firmware Upgrade HomeKit Custom Service.
-     * Please refer the FW Upgrade documentation under components/homekit/extras/include/hap_fw_upgrade.h
-     * and the top level README for more information.
-     */
-    hap_fw_upgrade_config_t ota_config = {
-        .server_cert_pem = server_cert,
-    };
-    service = hap_serv_fw_upgrade_create(&ota_config);
-
-    // Add the service to the Accessory Object
-    hap_acc_add_serv(accessory, service);
 
     // Add the Accessory to the HomeKit Database
     hap_add_accessory(accessory);

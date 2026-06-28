@@ -7,6 +7,7 @@
 #include "hap_garage.h"
 #include "door_control.h"
 #include "dht_sensor.h"
+#include "ota_update.h"
 
 #define GARAGE_TASK_STACKSIZE (4 * 1024)
 
@@ -16,10 +17,12 @@ static void garage_thread_entry(void *p) {
   door_control_init();      // door GPIO + queue + failsafe timer + initial state publish
   hap_garage_start();       // start the HAP core (now that the timer/GPIO exist)
   hap_garage_start_wifi();  // blocking
+  ota_update_mark_valid();  // healthy boot confirmed → cancel any pending rollback
   door_control_run_loop();  // never returns
 }
 
 void app_main(void) {
   xTaskCreate(garage_thread_entry, "hap_garage", GARAGE_TASK_STACKSIZE, NULL, 1, NULL);
   dht_sensor_start();
+  ota_update_start();
 }
