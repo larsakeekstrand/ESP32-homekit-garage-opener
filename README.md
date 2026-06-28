@@ -102,3 +102,26 @@ The poll interval and repo base URL are configurable via `idf.py menuconfig` →
 
 > **Security note:** anyone who can publish a GitHub Release to this repo can push firmware to the
 > device. Images are not cryptographically signed — acceptable for a personal repo.
+
+### Wi-Fi credentials & OTA
+
+Wi-Fi credentials are stored in the **`nvs` flash partition**, which OTA never touches (OTA only
+rewrites the inactive app slot). So **credentials persist across updates** — you don't re-enter them
+when the device self-updates.
+
+The release images built by CI are **provisioning-mode** (no credentials baked in). Don't put your
+SSID/password into the build or into GitHub — provision the device instead:
+
+- **First-time / after a reset:** when the device is unprovisioned it advertises a BLE service named
+  `PROV_XXYYZZ` (last 3 bytes of its MAC) and prints a **QR code + proof-of-possession (POP)** to the
+  serial monitor. Install Espressif's **ESP BLE Provisioning** app (iOS/Android), scan the QR code
+  (or pick `PROV_XXYYZZ` and enter the POP), choose your Wi-Fi, and enter the password. The creds are
+  saved to NVS over an encrypted BLE link.
+- **Re-provision:** short-press the boot/reset button (~3 s) to reset the network → the device
+  re-advertises for provisioning. A long press (~10 s) is a full factory reset (also unpairs
+  HomeKit).
+
+> A locally-built **hardcoded** image (`menuconfig` → App Wi-Fi → *Use hardcoded credentials*) is fine
+> for bench testing, but the first OTA replaces it with a provisioning image. Because esp-wifi caches
+> the hardcoded credentials in NVS, the provisioning image reconnects using them — but from then on
+> the device is provisioning-based, so re-provision over BLE if you ever clear the network config.

@@ -82,6 +82,26 @@ App sources compile with `-Werror` (see `main/CMakeLists.txt`), so any warning f
   Pass `-DFW_VERSION=<version>` to `idf.py` to bake in a release version. It is exposed as the
   HomeKit `fw_rev` and is the baseline for the OTA semver comparison.
 
+## Wi-Fi credentials & OTA
+
+Wi-Fi credentials live in the **`nvs` partition**, which OTA never rewrites (OTA only touches the
+inactive `ota_0`/`ota_1` app slot), so credentials **persist across updates**. CI/release images are
+**provisioning-mode** (`CONFIG_ENABLE_UNIFIED_PROVISIONING=y` in `sdkconfig.defaults`, no creds
+baked in) — never inject SSID/password into the build or GitHub.
+
+- `app_wifi` (from `esp-homekit-sdk/examples/common`) chooses its mode at build time:
+  `CONFIG_APP_WIFI_USE_HARDCODED` (creds compiled in; `esp_wifi` still caches them in NVS via the
+  default `WIFI_STORAGE_FLASH`) vs `CONFIG_APP_WIFI_USE_PROVISIONING` (unified provisioning).
+- A provisioning-mode image calls `wifi_prov_mgr_is_provisioned()`: if NVS already has credentials it
+  connects with them; otherwise it advertises **BLE** service `PROV_XXYYZZ` (last 3 MAC bytes) and
+  prints a QR + POP to the serial log for Espressif's *ESP BLE Provisioning* app.
+- Re-provision: boot/GPIO0 button short-hold (~3 s) → `hap_reset_network` (clears Wi-Fi); long-hold
+  (~10 s) → `hap_reset_to_factory` (also unpairs HomeKit). Both leave the device unprovisioned so it
+  re-advertises for BLE provisioning.
+- Implication for OTA: a locally-flashed **hardcoded** build's first OTA installs a provisioning
+  image, which reconnects using the credentials `esp_wifi` cached in NVS — after that the device is
+  provisioning-based.
+
 ## Hardware pin map (defined as macros in `main/board.h`)
 
 | Function            | GPIO | Notes |
