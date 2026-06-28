@@ -30,7 +30,7 @@ jobs:
           esp_idf_version: v5.5.2
           target: esp32
           command: |
-            export HOMEKIT_PATH="$GITHUB_WORKSPACE/esp-homekit-sdk"
+            export HOMEKIT_PATH="$PWD/esp-homekit-sdk"
             idf.py -DFW_VERSION="${{ inputs.version }}" set-target esp32 build
 
       - name: Check image fits the OTA partition
