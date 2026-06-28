@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "mdviewer": {
+      "args": [
+        "--mcp"
+      ],
+      "command": "/Applications/MDViewer.app/Contents/MacOS/mdviewer"
+    }
+  }
+}

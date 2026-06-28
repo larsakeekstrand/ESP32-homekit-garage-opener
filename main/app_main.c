@@ -21,6 +21,8 @@
 
 #include <dht.h>
 
+#include "board.h"
+
 static const dht_sensor_type_t sensor_type = DHT_TYPE_AM2301;
 
 /*  Required for server verification during OTA, PEM format as string  */
@@ -41,21 +43,6 @@ static const char *TAG = "HAP Garage";
 
 /* Reset to factory if button is pressed and held for more than 10 seconds */
 #define RESET_TO_FACTORY_BUTTON_TIMEOUT     10
-
-/* The button "Boot" will be used as the Reset button for the example */
-#define RESET_GPIO  GPIO_NUM_0
-
-#define RUNNING_LED_GPIO  GPIO_NUM_2
-#define DOOR_LED_GPIO  GPIO_NUM_16
-#define DOOR_RELAY_GPIO  GPIO_NUM_5
-#define DOOR_SENSOR_GPIO  GPIO_NUM_4
-
-#define GPIO_OUTPUT_PIN_SEL  ((1ULL<<RUNNING_LED_GPIO) | (1ULL<<DOOR_LED_GPIO) | (1ULL<<DOOR_RELAY_GPIO))
-#define GPIO_INPUT_PIN_SEL  (1ULL<<DOOR_SENSOR_GPIO)
-
-#define DHT_SENSOR_GPIO  GPIO_NUM_22
-
-#define ESP_INTR_FLAG_DEFAULT 0
 
 #define HOMEKIT_CHARACTERISTIC_CURRENT_DOOR_STATE_OPEN 0
 #define HOMEKIT_CHARACTERISTIC_CURRENT_DOOR_STATE_CLOSED 1
