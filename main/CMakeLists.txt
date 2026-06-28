@@ -1,4 +1,4 @@
-idf_component_register(SRCS "app_main.c" "hap_garage.c" "dht_sensor.c" "door_control.c"
+idf_component_register(SRCS "app_main.c" "hap_garage.c" "dht_sensor.c" "door_control.c" "ota_update.c"
                        INCLUDE_DIRS ".")
 
 # Firmware version: overridable with `idf.py -DFW_VERSION=1.2.3 build`.
