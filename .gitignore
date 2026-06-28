@@ -1,0 +1,5 @@
+# ESP-IDF generated artifacts
+build/
+managed_components/
+.cache/
+sdkconfig.old
