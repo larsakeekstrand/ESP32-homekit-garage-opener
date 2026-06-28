@@ -7,14 +7,10 @@
 #include <esp_log.h>
 #include <esp_timer.h>
 
-#include <dht.h>
-
 #include "board.h"
 #include "hap_garage.h"
 #include "door_control.h"
 #include "dht_sensor.h"
-
-static const dht_sensor_type_t sensor_type = DHT_TYPE_AM2301;
 
 static const char *TAG = "HAP Garage";
 
@@ -34,9 +30,6 @@ static QueueHandle_t gpio_evt_queue = NULL;
 uint8_t door_state = 0;
 
 esp_timer_handle_t oneshot_timer;
-
-float current_temperature = 0.0;
-float current_humidity    = 0.0;
 
 // Forward declarations
 static void timer_callback(void *args);
@@ -169,7 +162,6 @@ void set_door_state(uint8_t state) {
 
 /* Temporary shims — removed in Tasks 4–5 when these move to their modules. */
 uint8_t door_get_state(void) { return get_door_state(); }
-void dht_sensor_get(float *t, float *h) { *t = current_temperature; *h = current_humidity; }
 
 //
 // Handle a HomeKit open/close request (kicks relay, arms timer).
@@ -319,36 +311,6 @@ void door_control_run_loop(void) {
             }
         }
     }
-}
-
-//
-// Temp and humidity read task
-//
-static void dht_thread_entry(void *p)
-{
-  while (1) {
-    if (dht_read_float_data(sensor_type, DHT_SENSOR_GPIO, &current_humidity, &current_temperature) == ESP_OK)
-      ESP_LOGI(TAG, "Read Temp: %0.01fC Humidity: %0.01f%% ", current_humidity, current_temperature);
-    else
-      ESP_LOGE(TAG, "Could not read data from DHT sensor on GPIO %d", DHT_SENSOR_GPIO);
-
-    hap_garage_send_current_temperature(current_temperature);
-    hap_garage_send_current_humidity(current_humidity);
-
-    // Sleep for a while
-    vTaskDelay(30000 / portTICK_PERIOD_MS);
-  }
-
-  /* The task ends here. The read/write callbacks will be invoked by the HAP Framework */
-  vTaskDelete(NULL);
-}
-
-//
-// Spawn the DHT polling task.
-// Temporary shim — moves to dht_sensor.c in Task 4.
-//
-void dht_sensor_start(void) {
-  xTaskCreate(dht_thread_entry, DHT_TASK_NAME, DHT_TASK_STACKSIZE, NULL, DHT_TASK_PRIORITY, NULL);
 }
 
 //
