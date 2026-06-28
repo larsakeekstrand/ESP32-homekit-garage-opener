@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Clone pinned esp-homekit-sdk
         run: |
@@ -25,7 +25,7 @@ jobs:
           git -C "$GITHUB_WORKSPACE/esp-homekit-sdk" submodule update --init --recursive
 
       - name: Build firmware (versioned)
-        uses: espressif/esp-idf-ci-action@v1
+        uses: espressif/esp-idf-ci-action@9d38657f3d789ca759b2b37aaf5ceffbc42c4f0d # v1
         with:
           esp_idf_version: v5.5.2
           target: esp32
@@ -44,7 +44,7 @@ jobs:
         run: printf '%s' "${{ inputs.version }}" > version.txt
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           tag_name: v${{ inputs.version }}
           name: v${{ inputs.version }}
