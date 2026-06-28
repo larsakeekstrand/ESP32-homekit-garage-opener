@@ -46,20 +46,41 @@ idf.py flash monitor           # flash over serial and open the log monitor
 
 The build is **CMake only** via `idf.py`. The legacy GNU-make build has been removed.
 
-There are **no tests, linters, or CI** in this repo. "Verify" means it compiles and behaves
-correctly on hardware via `idf.py flash monitor`.
+There are **no tests or linters** in this repo. "Verify" means it compiles and behaves correctly on
+hardware via `idf.py flash monitor`.
+
+**CI/CD:** two GitHub Actions workflows live in `.github/workflows/`:
+
+- **`build.yml`** — runs on every push/PR to `main`: builds with ESP-IDF v5.5.2 (target `esp32`),
+  checks the image fits the 1600 KB OTA slot, and uploads `garage.bin` as an artifact.
+- **`release.yml`** — manual `workflow_dispatch` with a `version` input. Run it from the GitHub
+  Actions tab to tag `v<version>` and publish a GitHub Release with `garage.bin` and `version.txt`.
+
+App sources compile with `-Werror` (see `main/CMakeLists.txt`), so any warning fails CI.
 
 ## Configuration that matters
 
 - **`sdkconfig.defaults`** — pins the build to a custom partition table (`partitions_hap.csv`),
   forces single-core FreeRTOS (`CONFIG_FREERTOS_UNICORE=y`), 4 MB flash, and disables the task
-  watchdog. Edit this for persistent config; `sdkconfig` is the generated working copy.
+  watchdog. Also enables the mbedTLS certificate bundle
+  (`CONFIG_MBEDTLS_CERTIFICATE_BUNDLE=y`, `CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_CMN=y`),
+  bootloader rollback (`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y`), and `-Os` optimization
+  (`CONFIG_COMPILER_OPTIMIZATION_SIZE=y`). Edit this for persistent config; `sdkconfig` is the
+  generated working copy.
 - **`partitions_hap.csv`** — dual OTA app slots (`ota_0`/`ota_1`, 1600K each) plus a `factory_nvs`
   partition. HomeKit setup info is expected in `factory_nvs` for production; see below.
-- **`main/Kconfig.projbuild`** — defines `EXAMPLE_USE_HARDCODED_SETUP_CODE` (default `y`),
-  `EXAMPLE_SETUP_CODE` (default `111-22-333`), and `EXAMPLE_SETUP_ID` (default `ES32`). With the
-  hardcoded option on, `hap_garage.c` calls `hap_set_setup_code`/`hap_set_setup_id` directly. For
-  production, generate setup info with `factory_nvs_gen` and flash it to `factory_nvs` instead.
+- **`main/Kconfig.projbuild`** — defines:
+  - `EXAMPLE_USE_HARDCODED_SETUP_CODE` (default `y`), `EXAMPLE_SETUP_CODE` (default `111-22-333`),
+    `EXAMPLE_SETUP_ID` (default `ES32`). With the hardcoded option on, `hap_garage.c` calls
+    `hap_set_setup_code`/`hap_set_setup_id` directly. For production, generate setup info with
+    `factory_nvs_gen` and flash it to `factory_nvs` instead.
+  - `CONFIG_OTA_POLL_INTERVAL_SEC` (default `3600`) — how often the device polls GitHub Releases.
+  - `CONFIG_OTA_GITHUB_BASE_URL` (default
+    `https://github.com/larsakeekstrand/ESP32-homekit-garage-opener`) — repo base URL; the updater
+    appends `/releases/latest/download/version.txt` and `/releases/latest/download/garage.bin`.
+- **`FW_VERSION`** — build-time CMake cache variable (default `0.0.0-dev` for local/CI builds).
+  Pass `-DFW_VERSION=<version>` to `idf.py` to bake in a release version. It is exposed as the
+  HomeKit `fw_rev` and is the baseline for the OTA semver comparison.
 
 ## Hardware pin map (defined as macros in `main/board.h`)
 
@@ -74,23 +95,26 @@ correctly on hardware via `idf.py flash monitor`.
 
 ## Architecture
 
-The firmware is split into five modules under `main/`:
+The firmware is split into six modules under `main/`:
 
 | File | Responsibility |
 |------|---------------|
 | `board.h` | GPIO pin macros and board-level constants. |
-| `hap_garage.{c,h}` | HomeKit accessory + services (Garage Door Opener, Temperature, Humidity, FW-Upgrade/OTA), `garage_read`/`garage_write` HAP callbacks, the four `hap_garage_send_*` notify helpers, and the HAP + Wi-Fi lifecycle (`hap_garage_init`, `hap_garage_start_wifi`). |
+| `hap_garage.{c,h}` | HomeKit accessory + services (Garage Door Opener, Temperature, Humidity), `garage_read`/`garage_write` HAP callbacks, the four `hap_garage_send_*` notify helpers, and the HAP + Wi-Fi lifecycle (`hap_garage_init`, `hap_garage_start_wifi`). |
 | `door_control.{c,h}` | Door state machine, relay (300 ms kick), reed-sensor ISR + queue with ~50 ms debounce, 8 s failsafe timer, initial-state publish, and the consolidated event loop (`door_control_run_loop`). |
 | `dht_sensor.{c,h}` | DHT polling task (30 s interval), cached readings, `dht_sensor_get(float*, float*)`. |
-| `app_main.c` | Thin composition root: spawns the garage task and starts the DHT task. |
+| `ota_update.{c,h}` | Self-polling GitHub-release OTA updater. A low-priority FreeRTOS task started by `ota_update_start()` checks GitHub Releases hourly (configurable), fetches `version.txt`, semver-compares it to `FW_VERSION`, and if newer downloads `garage.bin` via `esp_https_ota` (HTTPS trusted via the ESP-IDF certificate bundle) then reboots. `ota_update_mark_valid()` confirms a healthy image to the bootloader, cancelling any pending rollback. |
+| `app_main.c` | Thin composition root: spawns the garage task, starts the DHT task, calls `ota_update_mark_valid()` (healthy boot confirmation) and `ota_update_start()` (starts the OTA poller). |
 
-Two FreeRTOS tasks run on the single configured core:
+Two FreeRTOS tasks run on the single configured core, plus the OTA background task:
 
 1. **`garage_thread_entry`** — calls `hap_garage_init()` → `door_control_init()` →
    `hap_garage_start_wifi()` (blocking Wi-Fi/HAP bring-up) → `door_control_run_loop()` (never
    returns).
 2. **DHT task** (spawned by `dht_sensor_start()`) — polls the DHT sensor every 30 s, caches the
    readings, and pushes temperature/humidity to HomeKit.
+3. **OTA task** (spawned by `ota_update_start()`) — low-priority, polls GitHub Releases on
+   `CONFIG_OTA_POLL_INTERVAL_SEC` cadence.
 
 ### The door state machine
 
@@ -121,8 +145,9 @@ On-demand reads (`garage_read`) for temperature/humidity return the values cache
 ### HomeKit accessory composition
 
 Built in `hap_garage_init()`: a Garage Door Opener service (with `garage_read`/`garage_write`
-callbacks), a Temperature Sensor service, a Humidity Sensor service, and the firmware-upgrade (OTA)
-service from `hap_fw_upgrade`. OTA cert verification is disabled (`server_cert[]` is empty).
+callbacks), a Temperature Sensor service, and a Humidity Sensor service. The `hap_fw_upgrade`
+HomeKit firmware-upgrade service has been removed — OTA is handled solely by the self-polling
+`ota_update` module.
 
 ## Conventions
 

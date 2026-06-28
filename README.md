@@ -64,3 +64,41 @@ idf.py set-target esp32
 idf.py build
 idf.py flash monitor
 ```
+
+## Continuous Integration & Releases
+
+![Build](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/actions/workflows/build.yml/badge.svg)
+
+### CI (automatic)
+
+Every push to `main` and every pull request targeting `main` triggers the **Build** workflow
+(`.github/workflows/build.yml`). It:
+
+- Builds the firmware with ESP-IDF v5.5.2 and target `esp32`.
+- Verifies the image fits the 1600 KB OTA partition.
+- Uploads `garage.bin` as a downloadable artifact.
+
+Warnings in the app sources are treated as errors (`-Werror`), so a warning will fail the build.
+
+### Cutting a release (manual)
+
+1. Go to the **Actions** tab in GitHub.
+2. Select the **Release** workflow.
+3. Click **Run workflow**, enter a version string (e.g. `1.1.0`, no leading `v`), and confirm.
+
+The workflow builds with that version baked in as `FW_VERSION`, tags the commit `v1.1.0`, and
+publishes a GitHub Release with two assets: `garage.bin` and `version.txt`.
+
+### Self-updating OTA
+
+The device checks `releases/latest` on GitHub **every hour** (default). If `version.txt` reports a
+version newer than the running firmware, the device downloads `garage.bin` via HTTPS and reboots
+into the new image. A bad image that never completes initialization is **automatically rolled back**
+by the bootloader.
+
+The poll interval and repo base URL are configurable via `idf.py menuconfig` →
+**Example Configuration** → OTA options (`CONFIG_OTA_POLL_INTERVAL_SEC`,
+`CONFIG_OTA_GITHUB_BASE_URL`).
+
+> **Security note:** anyone who can publish a GitHub Release to this repo can push firmware to the
+> device. Images are not cryptographically signed — acceptable for a personal repo.
