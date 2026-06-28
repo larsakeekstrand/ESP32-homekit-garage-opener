@@ -33,7 +33,7 @@ static hap_acc_t *accessory;
 //
 // Convert door state to string
 //
-char *door_state_to_string(uint8_t state) {
+static char *door_state_to_string(uint8_t state) {
   switch(state) {
     case HOMEKIT_CHARACTERISTIC_CURRENT_DOOR_STATE_OPEN:    return "open";
     case HOMEKIT_CHARACTERISTIC_CURRENT_DOOR_STATE_CLOSED:  return "closed";
@@ -173,7 +173,6 @@ static void reset_key_init(uint32_t key_gpio_pin)
 //
 static int garage_read(hap_char_t *hc, hap_status_t *status_code, void *serv_priv, void *read_priv)
 {
-  const hap_val_t *cur_val = hap_char_get_val(hc);
   hap_val_t new_val;
 
   if (hap_req_get_ctrl_id(read_priv)) {
@@ -203,12 +202,11 @@ static int garage_read(hap_char_t *hc, hap_status_t *status_code, void *serv_pri
   }
 
   if (!strcmp(hap_char_get_type_uuid(hc), HAP_CHAR_UUID_OBSTRUCTION_DETECTED)) {
-    /* Read the current value, toggle it and set the new value.
-     * A separate variable should be used for the new value, as the hap_char_get_val()
-     * API returns a const pointer
-     */
-    ESP_LOGI(TAG, "obstruction state : hap_char_get_val: %d", cur_val->u);
-    hap_char_update_val(hc, cur_val);
+    /* Copy the current value into a non-const local; hap_char_update_val()
+     * requires a non-const pointer even when the value is passed through unchanged. */
+    hap_val_t obs_val = *hap_char_get_val(hc);
+    ESP_LOGI(TAG, "obstruction state : hap_char_get_val: %d", obs_val.u);
+    hap_char_update_val(hc, &obs_val);
     *status_code = HAP_STATUS_SUCCESS;
   }
 

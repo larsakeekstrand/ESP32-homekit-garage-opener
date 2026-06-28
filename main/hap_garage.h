@@ -18,10 +18,6 @@
 #define HOMEKIT_CHARACTERISTIC_TARGET_DOOR_STATE_CLOSED  1
 #define HOMEKIT_CHARACTERISTIC_TARGET_DOOR_STATE_UNKNOWN 255
 
-/* Helper: convert a current-door-state value to a printable string.
- * Defined in hap_garage.c; also used by door_control (app_main.c this task). */
-char *door_state_to_string(uint8_t state);
-
 /* Lifecycle. */
 void hap_garage_init(void);
 void hap_garage_start_wifi(void);
