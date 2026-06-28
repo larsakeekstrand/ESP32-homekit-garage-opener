@@ -5,6 +5,7 @@
 #include <freertos/FreeRTOS.h>
 #include <esp_log.h>
 #include <esp_event.h>
+#include <esp_wifi.h>
 
 #include <hap.h>
 #include <hap_apple_servs.h>
@@ -236,6 +237,74 @@ static int dht_read(hap_char_t *hc, hap_status_t *status_code,
 }
 
 //
+// Map the common Wi-Fi disconnect reason codes to names, so the serial log
+// tells us *why* a weak link dropped (beacon-miss vs. auth vs. AP-gone) instead
+// of just "Disconnected". Full list in esp_wifi_types.h (wifi_err_reason_t).
+//
+static const char *wifi_disconnect_reason_to_string(uint8_t reason) {
+  switch (reason) {
+    case WIFI_REASON_AUTH_EXPIRE:        return "auth-expire";
+    case WIFI_REASON_AUTH_LEAVE:         return "auth-leave";
+    case WIFI_REASON_ASSOC_EXPIRE:       return "assoc-expire";
+    case WIFI_REASON_NOT_AUTHED:         return "not-authed";
+    case WIFI_REASON_NOT_ASSOCED:        return "not-assoced";
+    case WIFI_REASON_BEACON_TIMEOUT:     return "beacon-timeout (weak signal)";
+    case WIFI_REASON_NO_AP_FOUND:        return "no-AP-found (out of range)";
+    case WIFI_REASON_AUTH_FAIL:          return "auth-fail (bad password?)";
+    case WIFI_REASON_ASSOC_FAIL:         return "assoc-fail";
+    case WIFI_REASON_HANDSHAKE_TIMEOUT:  return "handshake-timeout";
+    case WIFI_REASON_CONNECTION_FAIL:    return "connection-fail";
+    default:                             return "other";
+  }
+}
+
+//
+// Wi-Fi stability handler (additive to app_wifi's own handler — esp_event fans
+// out to all registered handlers). Two jobs:
+//   - On every disconnect: log the reason code so weak-signal drops are diagnosable.
+//   - On the first successful connect: max the TX power (set_max_tx_power requires
+//     the driver to be started, hence here not in init) and switch future
+//     (re)connects to an all-channel scan that picks the strongest BSSID. The new
+//     scan config is persisted to NVS by the driver, so every later reconnect
+//     benefits without re-applying it.
+//
+static void wifi_stability_event_handler(void *arg, esp_event_base_t base,
+                                         int32_t id, void *data) {
+  if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
+    wifi_event_sta_disconnected_t *d = (wifi_event_sta_disconnected_t *)data;
+    ESP_LOGW(TAG, "Wi-Fi disconnected: reason %d (%s), rssi %d",
+             d->reason, wifi_disconnect_reason_to_string(d->reason), d->rssi);
+    return;
+  }
+
+  if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
+    static bool tuned = false;
+    if (tuned) return;       // one-shot: settings persist, no need to re-apply
+    tuned = true;
+
+    esp_err_t err = esp_wifi_set_max_tx_power(84);   // 84 = 21 dBm, the driver max
+    if (err != ESP_OK) {
+      ESP_LOGW(TAG, "esp_wifi_set_max_tx_power failed: %s", esp_err_to_name(err));
+    }
+
+    // Prefer the strongest AP on reconnect (helps mesh / repeater setups). Read
+    // the live config first so the stored SSID/password are preserved untouched.
+    wifi_config_t cfg;
+    err = esp_wifi_get_config(WIFI_IF_STA, &cfg);
+    if (err == ESP_OK) {
+      cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
+      cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+      err = esp_wifi_set_config(WIFI_IF_STA, &cfg);
+    }
+    if (err != ESP_OK) {
+      ESP_LOGW(TAG, "Wi-Fi scan-tuning failed: %s", esp_err_to_name(err));
+    } else {
+      ESP_LOGI(TAG, "Wi-Fi tuned: max TX power, all-channel scan, connect-by-signal");
+    }
+  }
+}
+
+//
 // Initialize HAP accessory, services, callbacks, and start HAP (non-blocking).
 // Call from the garage task before hap_garage_start_wifi().
 //
@@ -347,6 +416,19 @@ void hap_garage_init(void) {
      */
     esp_event_handler_register(HAP_EVENT, ESP_EVENT_ANY_ID, &garage_hap_event_handler, NULL);
 
+    /* Wi-Fi stability tuning for a mains-powered, possibly weak-signal install:
+     * keep the radio fully awake (no modem sleep) so we don't miss beacons and
+     * get aged out by the AP. Safe here because app_wifi_init() already ran
+     * esp_wifi_init(). TX-power and scan tuning happen on first connect (see
+     * wifi_stability_event_handler). */
+    esp_err_t ps_err = esp_wifi_set_ps(WIFI_PS_NONE);
+    if (ps_err != ESP_OK) {
+        ESP_LOGW(TAG, "esp_wifi_set_ps(NONE) failed: %s", esp_err_to_name(ps_err));
+    }
+    esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED,
+                               &wifi_stability_event_handler, NULL);
+    esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP,
+                               &wifi_stability_event_handler, NULL);
 }
 
 //

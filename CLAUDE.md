@@ -102,6 +102,24 @@ baked in) — never inject SSID/password into the build or GitHub.
   image, which reconnects using the credentials `esp_wifi` cached in NVS — after that the device is
   provisioning-based.
 
+### Wi-Fi stability tuning (weak-signal installs)
+
+`app_wifi` only does the bare minimum (reconnect on disconnect). `hap_garage.c` layers extra tuning
+on top of it for a mains-powered, possibly weak-signal install — all **in-repo** (not in the shared
+`app_wifi.c`), because CI clones `esp-homekit-sdk` fresh at a pinned commit, so any SDK edit would
+**not** ship in `garage.bin`. The tuning is additive (esp_event fans out to all handlers, so it
+coexists with `app_wifi`'s own handler):
+
+- `esp_wifi_set_ps(WIFI_PS_NONE)` in `hap_garage_init()` (after `app_wifi_init()` has run
+  `esp_wifi_init()`) — keeps the radio fully awake so missed beacons don't get the device aged out.
+- `wifi_stability_event_handler` registered for `WIFI_EVENT_STA_DISCONNECTED` (logs the
+  `wifi_err_reason_t` code + RSSI, e.g. `beacon-timeout`/`no-AP-found`/`auth-fail`, for diagnosis)
+  and `IP_EVENT_STA_GOT_IP` (one-shot on first connect: `esp_wifi_set_max_tx_power(84)` = 21 dBm, and
+  a read-modify-write of the stored config to `WIFI_ALL_CHANNEL_SCAN` + `WIFI_CONNECT_AP_BY_SIGNAL`
+  so every later reconnect picks the strongest BSSID; SSID/password preserved, persisted to NVS).
+- These tuning calls log a warning on failure rather than `ESP_ERROR_CHECK`-aborting — a TX-power
+  tweak failing must not brick the opener.
+
 ## Hardware pin map (defined as macros in `main/board.h`)
 
 | Function            | GPIO | Notes |
