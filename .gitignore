@@ -3,3 +3,5 @@ build/
 managed_components/
 .cache/
 sdkconfig.old
+# Generated per-developer config (regenerated from sdkconfig.defaults); may hold Wi-Fi creds
+sdkconfig
