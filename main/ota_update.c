@@ -82,6 +82,10 @@ static esp_err_t fetch_latest_version(char *buf, size_t buf_len) {
         .timeout_ms = 15000,
         .event_handler = ota_http_event,
         .user_data = &resp,
+        /* GitHub redirects to a long signed CDN URL; the default 512 B HTTP
+         * buffers can't hold that request line / response headers. */
+        .buffer_size = 4096,
+        .buffer_size_tx = 4096,
     };
     esp_http_client_handle_t client = esp_http_client_init(&config);
     if (!client) return ESP_FAIL;
@@ -113,6 +117,10 @@ static void do_ota(void) {
         .crt_bundle_attach = esp_crt_bundle_attach,
         .timeout_ms = 30000,
         .keep_alive_enable = true,
+        /* GitHub redirects to a long signed CDN URL; enlarge the HTTP buffers
+         * so the redirected request line / headers fit (default is 512 B). */
+        .buffer_size = 4096,
+        .buffer_size_tx = 4096,
     };
     esp_https_ota_config_t ota_config = {
         .http_config = &http_config,
