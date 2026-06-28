@@ -23,4 +23,17 @@ menu "Example Configuration"
         help
             Setup id to be used for HomeKot pairing, if hard-coded setup code is enabled.
 
+    config OTA_POLL_INTERVAL_SEC
+        int "OTA poll interval (seconds)"
+        default 3600
+        help
+            How often the device checks GitHub Releases for a newer firmware.
+
+    config OTA_GITHUB_BASE_URL
+        string "GitHub repo base URL for OTA"
+        default "https://github.com/larsakeekstrand/ESP32-homekit-garage-opener"
+        help
+            Base URL of the GitHub repo. The updater fetches
+            <base>/releases/latest/download/version.txt and .../garage.bin
+
 endmenu
