@@ -18,7 +18,7 @@ This project is **not self-contained**. Two external dependencies must be presen
    (declared in `main/idf_component.yml` as `esp-idf-lib/dht ^1.0.0`, resolved into
    `managed_components/`). No manual clone of `esp-idf-lib` is required.
 
-The repo lives at `~/source/ESP32-homekit-garage-opener`, a **sibling** of `~/esp/`:
+The repo lives at `~/source/ESP32-homekit-garage-opener`; its parent `~/source/` is a **sibling** of `~/esp/`:
 
 ```
 ~/

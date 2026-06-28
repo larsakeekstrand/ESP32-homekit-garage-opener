@@ -30,7 +30,7 @@ The DHT22/AM2301 driver is fetched automatically by the **ESP Component Manager*
 Clone this repository **alongside** (not inside) your `~/esp/` directory:
 
 ```
-cd ~/source    # or any directory whose parent is a sibling of ~/esp
+cd ~/source    # ~/source is a sibling of ~/esp
 git clone https://github.com/larsakeekstrand/ESP32-homekit-garage-opener
 ```
 
