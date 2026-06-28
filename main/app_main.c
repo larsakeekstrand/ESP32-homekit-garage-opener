@@ -17,7 +17,6 @@ static void garage_thread_entry(void *p) {
   door_control_init();      // door GPIO + queue + failsafe timer + initial state publish
   hap_garage_start();       // start the HAP core (now that the timer/GPIO exist)
   hap_garage_start_wifi();  // blocking
-  ota_update_mark_valid();  // healthy boot confirmed → cancel any pending rollback
   door_control_run_loop();  // never returns
 }
 
