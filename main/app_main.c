@@ -73,7 +73,7 @@ static const char *TAG = "HAP Garage";
 
 #define DOOR_MOVING_MAXTIME 8000000
 
-static xQueueHandle gpio_evt_queue = NULL;
+static QueueHandle_t gpio_evt_queue = NULL;
 
 uint8_t door_state = 0;
 
@@ -127,7 +127,7 @@ static void kick_door_relay() {
   gpio_set_level(DOOR_RELAY_GPIO, 1);
 
   // Wait for a while
-  vTaskDelay(300 / portTICK_RATE_MS);
+  vTaskDelay(300 / portTICK_PERIOD_MS);
 
   // Open relay
   gpio_set_level(DOOR_RELAY_GPIO, 0);
@@ -152,7 +152,7 @@ static void setup_gpio()
   //
   // Set config for outputs
   //
-  gpio_config_t io_conf;
+  gpio_config_t io_conf = {0};
   //disable interrupt
   io_conf.intr_type = GPIO_INTR_DISABLE;
   //set as output mode
@@ -241,7 +241,7 @@ static int garage_identify(hap_acc_t *ha)
 // An optional HomeKit Event handler which can be used to track HomeKit
 // specific events.
 //
-static void garage_hap_event_handler(void* arg, esp_event_base_t event_base, int event, void *data)
+static void garage_hap_event_handler(void* arg, esp_event_base_t event_base, int32_t event, void *data)
 {
     switch(event) {
         case HAP_EVENT_PAIRING_STARTED :
@@ -742,7 +742,7 @@ static void dht_thread_entry(void *p)
     send_current_temperature();
     send_current_humidity();
     // Sleep for a while
-    vTaskDelay(30000 / portTICK_RATE_MS);
+    vTaskDelay(30000 / portTICK_PERIOD_MS);
   }
 
   /* The task ends here. The read/write callbacks will be invoked by the HAP Framework */

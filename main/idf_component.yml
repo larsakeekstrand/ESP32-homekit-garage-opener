@@ -1,0 +1,6 @@
+## Managed dependencies for the garage opener firmware.
+dependencies:
+  idf:
+    version: ">=5.5.0"
+  # DHT22 / AM2301 driver (UncleRus esp-idf-lib, ESP Component Registry).
+  esp-idf-lib/dht: "^1.0.0"
