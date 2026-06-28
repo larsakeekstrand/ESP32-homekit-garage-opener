@@ -12,10 +12,11 @@
 
 /* Garage task: HAP + Wi-Fi lifecycle, then the reed-sensor event loop. */
 static void garage_thread_entry(void *p) {
-  hap_garage_init();
-  door_control_init();
-  hap_garage_start_wifi();   // blocking
-  door_control_run_loop();   // never returns
+  hap_garage_init();        // create accessory + services, app_wifi_init, register handlers (no hap_start)
+  door_control_init();      // door GPIO + queue + failsafe timer + initial state publish
+  hap_garage_start();       // start the HAP core (now that the timer/GPIO exist)
+  hap_garage_start_wifi();  // blocking
+  door_control_run_loop();  // never returns
 }
 
 void app_main(void) {

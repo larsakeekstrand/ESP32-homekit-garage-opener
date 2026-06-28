@@ -83,9 +83,9 @@ void door_control_init(void) {
   io_conf.pull_up_en = 1;
   gpio_config(&io_conf);
 
+  gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
   gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
   gpio_isr_handler_add(DOOR_SENSOR_GPIO, gpio_isr_handler, (void *) DOOR_SENSOR_GPIO);
-  gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
 
   esp_timer_create(&oneshot_timer_args, &oneshot_timer);
 

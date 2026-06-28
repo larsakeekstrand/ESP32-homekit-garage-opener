@@ -20,6 +20,7 @@
 
 /* Lifecycle. */
 void hap_garage_init(void);
+void hap_garage_start(void);
 void hap_garage_start_wifi(void);
 
 /* Push updates to HomeKit. */

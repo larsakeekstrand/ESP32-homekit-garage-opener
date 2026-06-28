@@ -175,6 +175,8 @@ static int garage_read(hap_char_t *hc, hap_status_t *status_code, void *serv_pri
 {
   hap_val_t new_val;
 
+  if (status_code) *status_code = HAP_STATUS_SUCCESS;
+
   if (hap_req_get_ctrl_id(read_priv)) {
     ESP_LOGI(TAG, "Received read from %s", hap_req_get_ctrl_id(read_priv));
     ESP_LOGI(TAG, "Received hap_char_get_type_uuid: %s", hap_char_get_type_uuid(hc));
@@ -361,12 +363,17 @@ void hap_garage_init(void) {
      */
     esp_event_handler_register(HAP_EVENT, ESP_EVENT_ANY_ID, &garage_hap_event_handler, NULL);
 
-    /* After all the initializations are done, start the HAP core */
+}
+
+//
+// Start the HAP core (call from the garage task after door_control_init).
+//
+void hap_garage_start(void) {
     hap_start();
 }
 
 //
-// Start Wi-Fi and block until connected (call from the garage task after hap_garage_init).
+// Start Wi-Fi and block until connected (call from the garage task after hap_garage_start).
 //
 void hap_garage_start_wifi(void) {
     app_wifi_start(portMAX_DELAY);
