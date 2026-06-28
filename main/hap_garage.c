@@ -269,7 +269,7 @@ void hap_garage_init(void) {
         .manufacturer = "Ekstrand",
         .model = "Garage01",
         .serial_num = "111111",
-        .fw_rev = "1.0.0",
+        .fw_rev = FW_VERSION,
         .hw_rev = NULL,
         .pv = "1.1.0",
         .identify_routine = garage_identify,
