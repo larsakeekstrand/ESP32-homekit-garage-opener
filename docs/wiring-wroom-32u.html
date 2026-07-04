@@ -1,0 +1,372 @@
+<title>ESP32-WROOM-32U Wiring — Garage Opener</title>
+<style>
+  :root{
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --ink:#16191d;
+    --ink-2:#5b6470;
+    --ink-3:#8a929c;
+    --hair:#d7dbe0;
+    --hair-2:#eaedf1;
+    --paper:#ffffff;
+    --board:#f3f5f8;
+    --board-edge:#c4cad2;
+    --can:#23272e;
+    /* function accents — each also carries a text label so grayscale still reads */
+    --relay:#c2410c;
+    --reed:#1d4ed8;
+    --runled:#067647;
+    --doorled:#6d28d9;
+    --dht:#b45309;
+    --btn:#64748b;
+    --pwr:#d62828;
+    --gnd:#1f2937;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{
+    margin:0;
+    background:#e9ecf0;
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:14px;
+    line-height:1.5;
+    padding:28px 16px;
+  }
+  .sheet{
+    background:var(--paper);
+    max-width:940px;
+    margin:0 auto;
+    padding:40px 44px 44px;
+    box-shadow:0 1px 3px rgba(20,25,35,.12),0 12px 40px rgba(20,25,35,.10);
+    border-radius:3px;
+  }
+
+  /* ---- masthead ---- */
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-3);
+    margin:0 0 10px;
+  }
+  h1{
+    font-size:27px;
+    line-height:1.15;
+    letter-spacing:-.015em;
+    margin:0 0 8px;
+    text-wrap:balance;
+    font-weight:680;
+  }
+  h1 span{color:var(--reed)}
+  .lede{
+    margin:0;
+    max-width:60ch;
+    color:var(--ink-2);
+    font-size:14.5px;
+  }
+  .lede b{color:var(--ink);font-weight:600}
+  .rule{height:1px;background:var(--hair);border:0;margin:26px 0}
+
+  /* ---- diagram ---- */
+  .diagram-h{
+    display:flex;align-items:baseline;justify-content:space-between;
+    gap:12px;margin-bottom:18px;flex-wrap:wrap;
+  }
+  .diagram-h h2, .table-h h2{
+    font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--ink-2);margin:0;font-weight:650;
+  }
+  .diagram-h .hint{font-size:12.5px;color:var(--ink-3)}
+  .diagram-h .hint b{color:var(--reed)}
+
+  .boardscroll{overflow-x:auto;padding:6px 0 2px}
+  .board{
+    display:flex;align-items:stretch;justify-content:center;
+    gap:0;width:max-content;margin:0 auto;
+    min-width:100%;
+  }
+  ul.col{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;justify-content:center;gap:5px}
+
+  .pin{display:flex;align-items:center;gap:0;height:26px;font-family:var(--mono);font-size:11.5px}
+  .col.left .pin{flex-direction:row-reverse}
+  /* pad = the header hole/number nearest the module */
+  .num{
+    flex:0 0 auto;min-width:26px;height:22px;display:flex;align-items:center;justify-content:center;
+    padding:0 6px;border:1px solid var(--hair);border-radius:4px;background:#fbfcfd;color:var(--ink-2);
+    font-weight:600;
+  }
+  .silk{flex:0 0 auto;padding:0 8px;color:var(--ink-3);white-space:nowrap}
+  .col.left .silk{text-align:right}
+
+  /* an in-use pin */
+  .pin.used .num{
+    border-color:var(--c);color:#fff;background:var(--c);
+  }
+  .pin.used .silk{color:var(--ink);font-weight:600}
+  .wire{flex:0 0 26px;height:3px;background:var(--c);align-self:center}
+  .tag{
+    flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;
+    padding:3px 10px;border-radius:5px;background:#fff;border:1.5px solid var(--c);
+    color:var(--ink);font-family:var(--sans);line-height:1.2;white-space:nowrap;
+  }
+  .tag b{font-size:12.5px;font-weight:650}
+  .tag em{font-family:var(--mono);font-style:normal;font-size:10px;letter-spacing:.02em;color:var(--c);text-transform:uppercase}
+  .col.left .tag{text-align:right;align-items:flex-end}
+
+  /* the module can */
+  .module{
+    flex:0 0 168px;margin:0 4px;border-radius:8px;
+    background:var(--board);border:1.5px solid var(--board-edge);
+    display:flex;flex-direction:column;align-items:center;
+    padding:12px 10px;position:relative;
+  }
+  .can{
+    width:100%;background:var(--can);border-radius:5px;color:#e8eaed;
+    padding:12px 10px 14px;text-align:center;margin-bottom:auto;
+  }
+  .can .brand{font-family:var(--mono);font-size:9px;letter-spacing:.22em;color:#aeb4bc;text-transform:uppercase}
+  .can .part{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.02em;margin-top:3px}
+  .can .ant{
+    margin-top:9px;font-size:9.5px;color:#c7cbd1;font-family:var(--mono);letter-spacing:.04em;
+    border-top:1px dashed #454b53;padding-top:7px;
+  }
+  .can .ant b{color:#fff}
+  .orient{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:10px 0 4px}
+  .usb{
+    width:58px;height:16px;border:1.5px solid var(--board-edge);border-top:0;
+    border-radius:0 0 6px 6px;background:#e7eaee;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;color:var(--ink-3);
+  }
+
+  /* ---- table ---- */
+  .table-h{margin:30px 0 12px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{
+    text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-3);font-weight:600;padding:0 10px 8px;border-bottom:1.5px solid var(--hair);
+  }
+  tbody td{padding:9px 10px;border-bottom:1px solid var(--hair-2);vertical-align:top}
+  tbody tr:last-child td{border-bottom:0}
+  .fn{display:flex;align-items:center;gap:9px;font-weight:600;white-space:nowrap}
+  .sw{width:11px;height:11px;border-radius:3px;flex:0 0 auto;display:inline-block}
+  td.pinlab, td.gpio{font-family:var(--mono);font-weight:600;white-space:nowrap}
+  td.gpio{color:var(--ink-2)}
+  td.note{color:var(--ink-2);font-size:12.5px}
+  td.note b{color:var(--ink);font-weight:600}
+  .pinlab u{text-decoration:none;color:var(--ink-3);font-weight:400}
+
+  /* ---- footnotes ---- */
+  .notes{margin-top:26px;display:grid;grid-template-columns:1fr 1fr;gap:14px 28px}
+  .notes .card{border:1px solid var(--hair);border-radius:7px;padding:12px 14px}
+  .notes h3{margin:0 0 5px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+  .notes p{margin:0;font-size:12.5px;color:var(--ink-2)}
+  .notes code{font-family:var(--mono);font-size:11.5px;background:var(--hair-2);padding:1px 5px;border-radius:4px;color:var(--ink)}
+  .src{margin-top:22px;font-size:11.5px;color:var(--ink-3);font-family:var(--mono)}
+
+  @media (max-width:640px){
+    .sheet{padding:26px 18px}
+    .notes{grid-template-columns:1fr}
+    h1{font-size:23px}
+  }
+  @media print{
+    body{background:#fff;padding:0}
+    .sheet{box-shadow:none;max-width:none;padding:0;border-radius:0}
+    .board,table,.notes,.diagram-block{break-inside:avoid}
+    tr,.pin{break-inside:avoid}
+  }
+  @page{size:A4 portrait;margin:14mm}
+</style>
+
+<div class="sheet">
+  <p class="eyebrow">ESP32-HomeKit Garage Opener · Wiring reference</p>
+  <h1>Rewiring to the <span>ESP32-WROOM-32U</span> (38-pin)</h1>
+  <p class="lede">Your firmware addresses pins by <b>GPIO number</b>, not by position on the board — so every assignment is identical to your old 30-pin module. Only the physical location of each pin moves. To rewire: find the header pin whose silk label matches the <b>IO-number</b> below, and land the wire there. No firmware change, no reflash-for-hardware.</p>
+
+  <hr class="rule">
+
+  <div class="diagram-block">
+    <div class="diagram-h">
+      <h2>Board map — used pins highlighted</h2>
+      <span class="hint">All six signal wires land on the <b>right-hand column</b>; power (5V) is bottom-left.</span>
+    </div>
+
+    <div class="boardscroll">
+      <div class="board">
+        <!-- LEFT COLUMN (top → bottom) -->
+        <ul class="col left">
+          <li class="pin"><span class="num">3V3</span><span class="silk">3V3</span></li>
+          <li class="pin"><span class="num">EN</span><span class="silk">EN</span></li>
+          <li class="pin"><span class="num">VP</span><span class="silk">GPIO36 · in</span></li>
+          <li class="pin"><span class="num">VN</span><span class="silk">GPIO39 · in</span></li>
+          <li class="pin"><span class="num">34</span><span class="silk">IO34 · in</span></li>
+          <li class="pin"><span class="num">35</span><span class="silk">IO35 · in</span></li>
+          <li class="pin"><span class="num">32</span><span class="silk">IO32</span></li>
+          <li class="pin"><span class="num">33</span><span class="silk">IO33</span></li>
+          <li class="pin"><span class="num">25</span><span class="silk">IO25</span></li>
+          <li class="pin"><span class="num">26</span><span class="silk">IO26</span></li>
+          <li class="pin"><span class="num">27</span><span class="silk">IO27</span></li>
+          <li class="pin"><span class="num">14</span><span class="silk">IO14</span></li>
+          <li class="pin"><span class="num">12</span><span class="silk">IO12</span></li>
+          <li class="pin"><span class="num">GND</span><span class="silk">GND</span></li>
+          <li class="pin"><span class="num">13</span><span class="silk">IO13</span></li>
+          <li class="pin"><span class="num">D2</span><span class="silk">flash</span></li>
+          <li class="pin"><span class="num">D3</span><span class="silk">flash</span></li>
+          <li class="pin"><span class="num">CMD</span><span class="silk">flash</span></li>
+          <li class="pin used" style="--c:var(--pwr)">
+            <span class="num">5V</span><span class="silk">5V</span>
+            <span class="wire"></span>
+            <span class="tag"><b>+5 V power in</b><em>red</em></span>
+          </li>
+        </ul>
+
+        <!-- MODULE -->
+        <div class="module">
+          <div class="can">
+            <div class="brand">Espressif</div>
+            <div class="part">ESP32-WROOM-32U</div>
+            <div class="ant"><b>U.FL</b> external antenna<br>connector (top edge)</div>
+          </div>
+          <div class="orient">bottom edge</div>
+          <div class="usb">USB</div>
+        </div>
+
+        <!-- RIGHT COLUMN (top → bottom) -->
+        <ul class="col right">
+          <li class="pin used" style="--c:var(--gnd)">
+            <span class="num">GND</span><span class="silk">GND</span>
+            <span class="wire"></span>
+            <span class="tag"><b>Common ground</b><em>black</em></span>
+          </li>
+          <li class="pin"><span class="num">23</span><span class="silk">IO23</span></li>
+          <li class="pin used" style="--c:var(--dht)">
+            <span class="num">22</span><span class="silk">IO22</span>
+            <span class="wire"></span>
+            <span class="tag"><b>DHT22 / AM2301 · data</b><em>amber</em></span>
+          </li>
+          <li class="pin"><span class="num">TX</span><span class="silk">GPIO1 · UART</span></li>
+          <li class="pin"><span class="num">RX</span><span class="silk">GPIO3 · UART</span></li>
+          <li class="pin"><span class="num">GND</span><span class="silk">GND</span></li>
+          <li class="pin"><span class="num">19</span><span class="silk">IO19</span></li>
+          <li class="pin"><span class="num">18</span><span class="silk">IO18</span></li>
+          <li class="pin used" style="--c:var(--relay)">
+            <span class="num">5</span><span class="silk">IO5</span>
+            <span class="wire"></span>
+            <span class="tag"><b>Door relay · IN</b><em>orange</em></span>
+          </li>
+          <li class="pin"><span class="num">17</span><span class="silk">IO17</span></li>
+          <li class="pin used" style="--c:var(--doorled)">
+            <span class="num">16</span><span class="silk">IO16</span>
+            <span class="wire"></span>
+            <span class="tag"><b>Door-state LED</b><em>violet</em></span>
+          </li>
+          <li class="pin used" style="--c:var(--reed)">
+            <span class="num">4</span><span class="silk">IO4</span>
+            <span class="wire"></span>
+            <span class="tag"><b>Reed door sensor</b><em>blue</em></span>
+          </li>
+          <li class="pin used" style="--c:var(--btn)">
+            <span class="num">0</span><span class="silk">IO0</span>
+            <span class="wire"></span>
+            <span class="tag"><b>Reset / Boot button</b><em>slate</em></span>
+          </li>
+          <li class="pin used" style="--c:var(--runled)">
+            <span class="num">2</span><span class="silk">IO2</span>
+            <span class="wire"></span>
+            <span class="tag"><b>Running LED</b><em>green</em></span>
+          </li>
+          <li class="pin"><span class="num">15</span><span class="silk">IO15</span></li>
+          <li class="pin"><span class="num">D1</span><span class="silk">flash</span></li>
+          <li class="pin"><span class="num">D0</span><span class="silk">flash</span></li>
+          <li class="pin"><span class="num">CLK</span><span class="silk">flash</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-h"><h2>Connection table</h2></div>
+  <table>
+    <thead>
+      <tr>
+        <th>Function</th>
+        <th>GPIO</th>
+        <th>Board pin</th>
+        <th>Connects to</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="fn"><span class="sw" style="background:var(--relay)"></span>Door relay</span></td>
+        <td class="gpio">GPIO5</td>
+        <td class="pinlab">IO5</td>
+        <td class="note">Relay module <b>IN</b></td>
+        <td class="note">Pulsed ~300 ms to kick the door. Relay VCC → 5V, relay GND → GND.</td>
+      </tr>
+      <tr>
+        <td><span class="fn"><span class="sw" style="background:var(--reed)"></span>Reed door sensor</span></td>
+        <td class="gpio">GPIO4</td>
+        <td class="pinlab">IO4</td>
+        <td class="note">Reed switch, other leg → <b>GND</b></td>
+        <td class="note">Internal pull-up is enabled in firmware — <b>no external resistor</b>. Any-edge interrupt, ~50 ms debounce.</td>
+      </tr>
+      <tr>
+        <td><span class="fn"><span class="sw" style="background:var(--runled)"></span>Running LED</span></td>
+        <td class="gpio">GPIO2</td>
+        <td class="pinlab">IO2</td>
+        <td class="note">LED (+) via ~330 Ω → <b>GND</b></td>
+        <td class="note">On while firmware runs. Strapping pin — an LED load is safe (unchanged from old board).</td>
+      </tr>
+      <tr>
+        <td><span class="fn"><span class="sw" style="background:var(--doorled)"></span>Door-state LED</span></td>
+        <td class="gpio">GPIO16</td>
+        <td class="pinlab">IO16</td>
+        <td class="note">LED (+) via ~330 Ω → <b>GND</b></td>
+        <td class="note">Mirrors door open/closed. On WROOM-32U (no PSRAM), IO16 is free.</td>
+      </tr>
+      <tr>
+        <td><span class="fn"><span class="sw" style="background:var(--dht)"></span>DHT22 / AM2301</span></td>
+        <td class="gpio">GPIO22</td>
+        <td class="pinlab">IO22</td>
+        <td class="note">Sensor <b>DATA</b></td>
+        <td class="note">Sensor VCC → 3V3, GND → GND. Add 10 kΩ from DATA → 3V3 if your module has no on-board pull-up.</td>
+      </tr>
+      <tr>
+        <td><span class="fn"><span class="sw" style="background:var(--btn)"></span>Reset / factory button</span></td>
+        <td class="gpio">GPIO0</td>
+        <td class="pinlab">IO0</td>
+        <td class="note">On-board <b>“Boot”</b> button (already wired)</td>
+        <td class="note">Short-hold ≈ 3 s → Wi-Fi reset; long-hold ≈ 10 s → factory reset. External button optional, in parallel to GND.</td>
+      </tr>
+      <tr>
+        <td><span class="fn"><span class="sw" style="background:var(--pwr)"></span>Power in</span></td>
+        <td class="gpio">—</td>
+        <td class="pinlab">5V <u>(bottom-left)</u></td>
+        <td class="note">+5 V supply / USB 5 V</td>
+        <td class="note">The board’s regulator makes 3V3 on-board. <b>Never feed 5 V into the 3V3 pin.</b></td>
+      </tr>
+      <tr>
+        <td><span class="fn"><span class="sw" style="background:var(--gnd)"></span>Ground</span></td>
+        <td class="gpio">—</td>
+        <td class="pinlab">GND <u>(any)</u></td>
+        <td class="note">Common ground</td>
+        <td class="note">Relay, reed sensor, both LEDs and the DHT all share GND. Several GND pins available.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="notes">
+    <div class="card">
+      <h3>Strapping pins</h3>
+      <p>GPIO0, GPIO2 and GPIO5 influence boot mode at power-on. They’re the same pins your old board used, so if it booted reliably, this one will too — keep GPIO0 free to be pulled low only by the Boot button.</p>
+    </div>
+    <div class="card">
+      <h3>External antenna — free signal</h3>
+      <p>The <b>“U”</b> means a U.FL connector instead of a PCB antenna. Fitting a small external antenna can add 5–10 dBm — watch it on the <code>WiFi RSSI</code> log line you just added.</p>
+    </div>
+  </div>
+
+  <p class="src">GPIO assignments are authoritative, taken from <code style="font-family:var(--mono)">main/board.h</code>. Component values (LED series resistors, DHT pull-up) are standard wiring practice, not defined by the firmware.</p>
+</div>
