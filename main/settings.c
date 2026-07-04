@@ -124,8 +124,8 @@ static void counters_flush(void) {
     nvs_set_blob(h, "counters", &s_counters, sizeof(s_counters));
     nvs_commit(h);
     nvs_close(h);
+    s_dirty_incrs = 0;   /* only clear after a successful persist */
   }
-  s_dirty_incrs = 0;
 }
 
 static void bump(uint32_t *ctr) {
