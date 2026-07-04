@@ -26,6 +26,7 @@ static esp_timer_handle_t oneshot_timer;
 
 static int64_t  door_open_since_us;        /* set when OPEN, 0 when CLOSED */
 static bool     left_open_tripped;
+/* RAM-only: a reboot re-arms auto-close; if the sensor is still stuck it simply re-latches after 3 more attempts. */
 static bool     auto_close_faulted;
 static uint32_t auto_close_fail_count;
 static int64_t  auto_close_verify_deadline_us;  /* 0 = no verify pending */

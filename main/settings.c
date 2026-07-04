@@ -128,6 +128,12 @@ static void counters_flush(void) {
   }
 }
 
+/* Concurrency: counters + the dirty count are owned by the door task (the only
+ * caller of settings_incr_* / settings_flush). Config setters/getters and the
+ * password run on the httpd task. NVS has its own internal locking and the
+ * config u32s/bool are atomic on this 32-bit target, so no mutex is needed;
+ * the only cross-task effect is a possible cosmetic torn read of the counters
+ * struct in settings_get_counters, which never corrupts state. */
 static void bump(uint32_t *ctr) {
   (*ctr)++;
   if (++s_dirty_incrs >= FLUSH_EVERY) counters_flush();

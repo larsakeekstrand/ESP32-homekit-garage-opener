@@ -193,8 +193,8 @@ static esp_err_t status_get(httpd_req_t *req) {
   settings_counters_t c;
   settings_get_counters(&c);
 
-  char buf[720];
-  int n = snprintf(buf, sizeof(buf),
+  static char buf[720];
+  snprintf(buf, sizeof(buf),
     "{\"door_state\":\"%s\",\"door_open_seconds\":%lld,\"lockout\":%s,"
     "\"rssi\":%d,\"rssi_quality\":\"%s\",\"temperature\":%.1f,\"humidity\":%.1f,"
     "\"uptime_seconds\":%lld,\"fw_version\":\"%s\",\"free_heap\":%u,"
@@ -211,7 +211,7 @@ static esp_err_t status_get(httpd_req_t *req) {
     (unsigned)settings_get_auto_close_sec(), (unsigned)settings_get_left_open_sec());
 
   httpd_resp_set_type(req, "application/json");
-  httpd_resp_send(req, buf, n);
+  httpd_resp_send(req, buf, HTTPD_RESP_USE_STRLEN);
   return ESP_OK;
 }
 
@@ -244,7 +244,6 @@ static esp_err_t lockout_post(httpd_req_t *req) {
 static esp_err_t fault_reset_post(httpd_req_t *req) {
   if (require_auth(req) != ESP_OK) return ESP_OK;
   door_auto_close_fault_reset();
-  hap_garage_send_status_fault(0);
   httpd_resp_sendstr(req, "ok");
   return ESP_OK;
 }
