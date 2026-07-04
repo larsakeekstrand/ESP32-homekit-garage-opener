@@ -3,6 +3,7 @@
 //
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 
 /* Current door state (mirrors HAP spec enum). */
@@ -28,3 +29,10 @@ void hap_garage_send_current_door_state(uint8_t state);
 void hap_garage_send_target_door_state(uint8_t state);
 void hap_garage_send_current_temperature(float temperature);
 void hap_garage_send_current_humidity(float humidity);
+
+/* Left-open Contact Sensor: true = tripped (contact "open"). */
+void hap_garage_send_left_open(bool tripped);
+/* Garage Door StatusFault: 0 = no fault, 1 = general fault. */
+void hap_garage_send_status_fault(uint8_t fault);
+/* Lockout Switch: reflect an externally-driven (web) change back to HomeKit. */
+void hap_garage_send_lockout(bool on);

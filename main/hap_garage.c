@@ -19,6 +19,7 @@
 #include "hap_garage.h"
 #include "door_control.h"
 #include "dht_sensor.h"
+#include "settings.h"
 #include "board.h"
 
 static const char *TAG = "HAP Garage";
@@ -89,6 +90,39 @@ void hap_garage_send_current_humidity(float humidity) {
   hap_serv_t *s = hap_acc_get_serv_by_uuid(accessory, HAP_SERV_UUID_HUMIDITY_SENSOR);
   hap_char_t *h = hap_serv_get_char_by_uuid(s, HAP_CHAR_UUID_CURRENT_RELATIVE_HUMIDITY);
   ESP_LOGI(TAG, "Sending current humidity [%f]", humidity);
+  hap_char_update_val(h, &v);
+}
+
+//
+// Send update of the left-open Contact Sensor (1 = tripped / "contact not detected").
+//
+void hap_garage_send_left_open(bool tripped) {
+  hap_val_t v = { .u = tripped ? 1 : 0 };
+  hap_serv_t *s = hap_acc_get_serv_by_uuid(accessory, HAP_SERV_UUID_CONTACT_SENSOR);
+  hap_char_t *h = hap_serv_get_char_by_uuid(s, HAP_CHAR_UUID_CONTACT_SENSOR_STATE);
+  ESP_LOGI(TAG, "Sending left-open contact [%s]", tripped ? "tripped" : "clear");
+  hap_char_update_val(h, &v);
+}
+
+//
+// Send update of the Garage Door StatusFault (0 = none, 1 = general fault).
+//
+void hap_garage_send_status_fault(uint8_t fault) {
+  hap_val_t v = { .u = fault };
+  hap_serv_t *s = hap_acc_get_serv_by_uuid(accessory, HAP_SERV_UUID_GARAGE_DOOR_OPENER);
+  hap_char_t *h = hap_serv_get_char_by_uuid(s, HAP_CHAR_UUID_STATUS_FAULT);
+  ESP_LOGI(TAG, "Sending status fault [%d]", fault);
+  hap_char_update_val(h, &v);
+}
+
+//
+// Reflect a web-initiated lockout change back to the HomeKit Switch tile.
+//
+void hap_garage_send_lockout(bool on) {
+  hap_val_t v = { .b = on };
+  hap_serv_t *s = hap_acc_get_serv_by_uuid(accessory, HAP_SERV_UUID_SWITCH);
+  hap_char_t *h = hap_serv_get_char_by_uuid(s, HAP_CHAR_UUID_ON);
+  ESP_LOGI(TAG, "Sending lockout switch [%s]", on ? "ON" : "OFF");
   hap_char_update_val(h, &v);
 }
 
@@ -220,10 +254,42 @@ static int garage_read(hap_char_t *hc, hap_status_t *status_code, void *serv_pri
 }
 
 //
-// Incoming write (delegates to door_control)
+// Write callback for the Lockout Switch. Persists to NVS; the door logic reads
+// settings_get_lockout() on each command / tick.
+//
+static int lockout_write(hap_write_data_t write_data[], int count,
+                         void *serv_priv, void *write_priv) {
+  for (int i = 0; i < count; i++) {
+    hap_write_data_t *w = &write_data[i];
+    if (!strcmp(hap_char_get_type_uuid(w->hc), HAP_CHAR_UUID_ON)) {
+      settings_set_lockout(w->val.b);
+      hap_char_update_val(w->hc, &w->val);
+      if (w->status) *(w->status) = HAP_STATUS_SUCCESS;
+      ESP_LOGI(TAG, "Lockout %s (via HomeKit)", w->val.b ? "ON" : "OFF");
+    } else {
+      if (w->status) *(w->status) = HAP_STATUS_RES_ABSENT;
+    }
+  }
+  return HAP_SUCCESS;
+}
+
+//
+// Incoming write (delegates to door_control, unless lockout is engaged).
 //
 static int garage_write(hap_write_data_t write_data[], int count,
                         void *serv_priv, void *write_priv) {
+  if (settings_get_lockout()) {
+    ESP_LOGW(TAG, "Door command refused — lockout is ON");
+    /* Snap the target back to current so the Home app shows no pending command. */
+    uint8_t cur = door_get_state();
+    hap_garage_send_target_door_state(
+        cur == HOMEKIT_CHARACTERISTIC_CURRENT_DOOR_STATE_OPEN
+            ? HOMEKIT_CHARACTERISTIC_TARGET_DOOR_STATE_OPEN
+            : HOMEKIT_CHARACTERISTIC_TARGET_DOOR_STATE_CLOSED);
+    for (int i = 0; i < count; i++)
+      if (write_data[i].status) *(write_data[i].status) = HAP_STATUS_SUCCESS;
+    return HAP_SUCCESS;
+  }
   door_handle_homekit_request();
   return HAP_SUCCESS;
 }
@@ -422,6 +488,20 @@ void hap_garage_init(void) {
     hap_serv_add_char(hum_service, hap_char_name_create("Humidity"));
     hap_serv_set_read_cb(hum_service, dht_read);
     hap_acc_add_serv(accessory, hum_service);
+
+    // Left-open Contact Sensor (trips when the door is open past the threshold).
+    hap_serv_t *contact_service = hap_serv_contact_sensor_create(0);  // 0 = contact detected (closed)
+    hap_serv_add_char(contact_service, hap_char_name_create("Garage Left Open"));
+    hap_acc_add_serv(accessory, contact_service);
+
+    // Lockout Switch (absolute freeze of all door movement when ON).
+    hap_serv_t *lockout_service = hap_serv_switch_create(settings_get_lockout());
+    hap_serv_add_char(lockout_service, hap_char_name_create("Lockout"));
+    hap_serv_set_write_cb(lockout_service, lockout_write);
+    hap_acc_add_serv(accessory, lockout_service);
+
+    // StatusFault characteristic on the Garage Door service (auto-close fault indicator).
+    hap_serv_add_char(service, hap_char_status_fault_create(0));
 
     // Add the Accessory to the HomeKit Database
     hap_add_accessory(accessory);
