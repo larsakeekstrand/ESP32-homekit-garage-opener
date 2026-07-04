@@ -3,6 +3,7 @@
 //
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 
 /* Door open/closed sensor logical values. */
@@ -23,3 +24,10 @@ void door_control_init(void);
 
 /* Run the reed-sensor event loop forever (call from the garage task). */
 void door_control_run_loop(void);
+
+/* True when auto-close has latched off after repeated failed attempts. */
+bool door_auto_close_faulted(void);
+/* Manually clear a latched auto-close fault (web reset button). */
+void door_auto_close_fault_reset(void);
+/* Microseconds the door has been continuously OPEN, or 0 if not open. */
+int64_t door_open_duration_us(void);
