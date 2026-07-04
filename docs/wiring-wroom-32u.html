@@ -166,6 +166,15 @@
   .notes code{font-family:var(--mono);font-size:11.5px;background:var(--hair-2);padding:1px 5px;border-radius:4px;color:var(--ink)}
   .src{margin-top:22px;font-size:11.5px;color:var(--ink-3);font-family:var(--mono)}
 
+  /* ---- power rails ---- */
+  .rails{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:2px 0 4px}
+  .railcard{border:1px solid var(--hair);border-top:3px solid var(--rc,var(--hair));border-radius:8px;padding:12px 15px}
+  .railcard .rname{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.03em;color:var(--rc);margin-bottom:8px}
+  .railcard .flow{font-size:12.5px;color:var(--ink-2);line-height:1.55}
+  .railcard .flow b{color:var(--ink);font-weight:600}
+  .railcard code, .railmap code{font-family:var(--mono);font-size:11px;background:var(--hair-2);padding:1px 5px;border-radius:4px;color:var(--ink)}
+  .railmap{margin:14px 0 0;font-size:12.5px;color:var(--ink-2);line-height:1.6}
+
   @media (max-width:640px){
     .sheet{padding:26px 18px}
     .notes{grid-template-columns:1fr}
@@ -174,7 +183,7 @@
   @media print{
     body{background:#fff;padding:0}
     .sheet{box-shadow:none;max-width:none;padding:0;border-radius:0}
-    .board,table,.notes,.diagram-block{break-inside:avoid}
+    .board,table,.notes,.diagram-block,.rails,.railcard{break-inside:avoid}
     tr,.pin{break-inside:avoid}
   }
   @page{size:A4 portrait;margin:14mm}
@@ -303,7 +312,7 @@
         <td class="gpio">GPIO5</td>
         <td class="pinlab">IO5</td>
         <td class="note">Relay module <b>IN</b></td>
-        <td class="note">Pulsed ~300 ms to kick the door. Relay VCC → 5V, relay GND → GND.</td>
+        <td class="note">Pulsed ~300 ms to kick the door. <b>Relay VDD → 5V</b>, relay GND → GND. Old board pulls the relay EN to VDD via 20 kΩ (R3) — keep it if your carrier has it.</td>
       </tr>
       <tr>
         <td><span class="fn"><span class="sw" style="background:var(--reed)"></span>Reed door sensor</span></td>
@@ -331,7 +340,7 @@
         <td class="gpio">GPIO22</td>
         <td class="pinlab">IO22</td>
         <td class="note">Sensor <b>DATA</b></td>
-        <td class="note">Sensor VCC → 3V3, GND → GND. Add 10 kΩ from DATA → 3V3 if your module has no on-board pull-up.</td>
+        <td class="note"><b>Sensor VCC → 3V3</b>, GND → GND. Old board used no separate data pull-up, so reuse the same DHT22 module (it has its own).</td>
       </tr>
       <tr>
         <td><span class="fn"><span class="sw" style="background:var(--btn)"></span>Reset / factory button</span></td>
@@ -356,6 +365,24 @@
       </tr>
     </tbody>
   </table>
+
+  <div class="table-h" style="margin-top:32px"><h2>Power distribution — unchanged from the old board</h2></div>
+  <p class="lede" style="margin:0 0 16px">Everything is still powered <b>through the module</b>: USB 5&nbsp;V feeds the board, and each peripheral taps the board’s own pins. The 38-pin board’s <b>5V</b> and <b>3V3</b> pins are the exact equivalents of your old board’s <b>Vin</b> and <b>3v3</b> — wire them the same way.</p>
+  <div class="rails">
+    <div class="railcard" style="--rc:var(--pwr)">
+      <div class="rname"><span class="sw" style="background:var(--pwr)"></span>5&nbsp;V rail</div>
+      <div class="flow">USB&nbsp;5&nbsp;V (VBUS) → <code>5V</code> pin → <b>Relay VDD</b> (5&nbsp;V coil).<br>Old board: this pin was <code>Vin</code>.</div>
+    </div>
+    <div class="railcard" style="--rc:var(--reed)">
+      <div class="rname"><span class="sw" style="background:var(--reed)"></span>3.3&nbsp;V rail</div>
+      <div class="flow">On-board regulator → <code>3V3</code> pin → <b>DHT22 VCC</b>.<br>Ample headroom — DHT draws ~1.5&nbsp;mA.</div>
+    </div>
+    <div class="railcard" style="--rc:var(--gnd)">
+      <div class="rname"><span class="sw" style="background:var(--gnd)"></span>Ground</div>
+      <div class="flow">Common <code>GND</code> → relay, DHT22, both LEDs, reed switch.<br>Any GND pin will do.</div>
+    </div>
+  </div>
+  <p class="railmap">Power-pin equivalence: <code>Vin&nbsp;→&nbsp;5V</code> · <code>3v3&nbsp;→&nbsp;3V3</code> · <code>GND&nbsp;→&nbsp;GND</code>. Powered from USB as before, the relay coil (~70&nbsp;mA) draws from USB&nbsp;VBUS through the <code>5V</code> pin — comfortably within a normal USB supply. The 5 V relay must sit on <code>5V</code>, never <code>3V3</code>.</p>
 
   <div class="notes">
     <div class="card">
