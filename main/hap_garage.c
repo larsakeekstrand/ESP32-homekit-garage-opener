@@ -6,6 +6,8 @@
 #include <esp_log.h>
 #include <esp_event.h>
 #include <esp_wifi.h>
+#include <esp_mac.h>
+#include <esp_timer.h>
 
 #include <hap.h>
 #include <hap_apple_servs.h>
@@ -26,6 +28,11 @@ static hap_acc_t *accessory;
 /* Reset button timeouts. */
 #define RESET_NETWORK_BUTTON_TIMEOUT    3
 #define RESET_TO_FACTORY_BUTTON_TIMEOUT 10
+
+/* How often to log the Wi-Fi signal strength to the serial monitor. */
+#define RSSI_LOG_INTERVAL_SEC 30
+
+static esp_timer_handle_t rssi_log_timer;
 
 //
 // Convert door state to string
@@ -259,6 +266,34 @@ static const char *wifi_disconnect_reason_to_string(uint8_t reason) {
 }
 
 //
+// Map a Wi-Fi RSSI (dBm) to a human-readable quality label, using the usual
+// rule-of-thumb thresholds for 2.4 GHz.
+//
+static const char *rssi_quality_to_string(int rssi) {
+  if (rssi >= -55) return "excellent";
+  if (rssi >= -67) return "good";
+  if (rssi >= -75) return "fair";
+  return "weak";
+}
+
+//
+// Periodic esp_timer callback: log the current Wi-Fi signal strength. Runs in
+// the shared esp_timer task, so it must stay short and non-blocking — a single
+// AP-info query plus a log line. If the link is down, esp_wifi_sta_get_ap_info()
+// returns ESP_ERR_WIFI_NOT_CONNECT and we say so instead of printing a stale RSSI.
+//
+static void wifi_rssi_log_cb(void *arg) {
+  wifi_ap_record_t ap;
+  esp_err_t err = esp_wifi_sta_get_ap_info(&ap);
+  if (err == ESP_OK) {
+    ESP_LOGI(TAG, "WiFi RSSI: %d dBm (%s), BSSID " MACSTR,
+             ap.rssi, rssi_quality_to_string(ap.rssi), MAC2STR(ap.bssid));
+  } else {
+    ESP_LOGI(TAG, "WiFi RSSI: not connected (%s)", esp_err_to_name(err));
+  }
+}
+
+//
 // Wi-Fi stability handler (additive to app_wifi's own handler — esp_event fans
 // out to all registered handlers). Two jobs:
 //   - On every disconnect: log the reason code so weak-signal drops are diagnosable.
@@ -300,6 +335,22 @@ static void wifi_stability_event_handler(void *arg, esp_event_base_t base,
       ESP_LOGW(TAG, "Wi-Fi scan-tuning failed: %s", esp_err_to_name(err));
     } else {
       ESP_LOGI(TAG, "Wi-Fi tuned: max TX power, all-channel scan, connect-by-signal");
+    }
+
+    // Start logging the signal strength periodically now that we're connected.
+    // Created here (inside the one-shot block) so we never spawn a second timer
+    // across reconnects; the callback itself handles a later dropped link.
+    const esp_timer_create_args_t rssi_timer_args = {
+      .callback = &wifi_rssi_log_cb,
+      .name = "rssi_log",
+    };
+    esp_err_t t_err = esp_timer_create(&rssi_timer_args, &rssi_log_timer);
+    if (t_err == ESP_OK) {
+      t_err = esp_timer_start_periodic(rssi_log_timer,
+                                       (uint64_t)RSSI_LOG_INTERVAL_SEC * 1000000ULL);
+    }
+    if (t_err != ESP_OK) {
+      ESP_LOGW(TAG, "RSSI log timer failed: %s", esp_err_to_name(t_err));
     }
   }
 }
