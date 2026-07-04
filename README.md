@@ -6,6 +6,10 @@ Features:
 * Controls a relay that opens/closes the door.
 * Uses a reed sensor to detect if the door is open/closed.
 * Contains a DHT22 temperature/humidity sensor.
+* Auto-close timer (default 10 min, configurable, 0 = off).
+* Door-left-open HomeKit alert via a Contact Sensor accessory.
+* Vacation/lockout switch to refuse all open and close commands.
+* Local status and configuration web page at `http://<device-ip>/`.
 
 Schematics for the hardware can be found [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/478886ba8ccb8f31c0db583b10b282738d822965/docs/Schematic_GarageOpener.pdf). The schematics is made using [EasyEDA](https://easyeda.com/)
 
@@ -14,6 +18,67 @@ STL files for the housing can be found [here](https://github.com/larsakeekstrand
 An overview of how to assemble the housing can be found [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/d89407ebe4e6d4afd1c8a517a600cc80013ba3aa/docs/GarageOpenerCompleteNotPrintable.stl).
 
 
+
+## Safety features
+
+### Auto-close timer
+
+When the door has been open for more than **10 minutes** (default), the firmware automatically
+sends a close command. The timeout is configurable on the local web page (see below); set it to
+`0` to disable auto-close entirely.
+
+### Door-left-open alert
+
+A HomeKit **Contact Sensor** named **"Garage Left Open"** fires when the door has been open for
+more than **5 minutes** (default). Enable notifications on it in the Home app to receive an alert.
+Set the threshold to `0` on the web page to disable the alert. The sensor still reports even when
+the lockout switch is ON.
+
+### Vacation / lockout switch
+
+A HomeKit **Switch** named **"Lockout"** puts the opener into an absolute freeze: while it is ON,
+HomeKit open and close commands are refused and the auto-close timer is suspended. It can be
+toggled from both the Home app and the local web page — they stay in sync.
+
+### Local status and configuration web page
+
+The device serves a status and config page at `http://<device-ip>/` on the local network (plain
+HTTP, no HTTPS, LAN only).
+
+**First-time setup — set a password promptly.** On the very first visit the device has no password
+and shows a one-time "create password" screen (trust-on-first-use). Anyone on the same LAN can set
+the password until you do, so set it immediately after first access.
+
+After the password is set, the page requires **HTTP Basic Auth** (username `admin`, your chosen
+password). From there you can:
+
+* View live status: door state, lockout, Wi-Fi RSSI, temperature, humidity, uptime.
+* View system info: firmware version, free heap, MAC address, IP address, reset reason.
+* View persisted counters: door cycles, auto-closes, door-left-open trips, faults.
+* Edit the auto-close timeout and door-left-open threshold.
+* Change the admin password.
+* Reset a latched auto-close fault (see below).
+
+### Auto-close fault detection
+
+If the reed sensor remains stuck reporting "open" after a close command, the firmware makes at most
+**3 attempts** then latches auto-close off, so it never oscillates the door. A minimum of 60
+seconds between pulses and a per-hour cap serve as additional backstops.
+
+The fault is surfaced three ways:
+
+1. A banner on the local web page with a **Reset** button to clear it manually.
+2. A HomeKit **StatusFault** indicator on the Garage Door Opener accessory.
+3. A log message at error severity.
+
+The fault clears automatically when the door genuinely reports closed, or immediately when you
+press **Reset** on the web page.
+
+### HomeKit caveat after updating
+
+If you are updating from a firmware version that does not include these features, you may need to
+**remove and re-add the accessory** in the Home app to make the new **"Garage Left Open"** Contact
+Sensor and **"Lockout"** Switch tiles visible.
 
 ## Getting started
 ### Setup host environment
