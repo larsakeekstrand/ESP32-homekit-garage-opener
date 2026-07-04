@@ -45,10 +45,10 @@ static void door_set_state(uint8_t s) {
     if (door_open_since_us == 0) door_open_since_us = esp_timer_get_time();
   } else if (s == HOMEKIT_CHARACTERISTIC_CURRENT_DOOR_STATE_CLOSED) {
     door_open_since_us = 0;
-    if (auto_close_faulted) {                 /* genuine close → clear the fault */
+    auto_close_fail_count = 0;               /* genuine close → failures are no longer consecutive */
+    auto_close_verify_deadline_us = 0;       /* cancel any pending auto-close verification */
+    if (auto_close_faulted) {                /* was latched → clear the fault + indicator */
       auto_close_faulted = false;
-      auto_close_fail_count = 0;
-      auto_close_verify_deadline_us = 0;
       hap_garage_send_status_fault(0);
       ESP_LOGI(TAG, "Auto-close fault cleared (door reported CLOSED)");
     }
@@ -156,6 +156,7 @@ void door_auto_close_fault_reset(void) {
   auto_close_faulted = false;
   auto_close_fail_count = 0;
   auto_close_verify_deadline_us = 0;
+  hap_garage_send_status_fault(0);
   ESP_LOGI(TAG, "Auto-close fault reset (manual)");
 }
 
