@@ -21,8 +21,10 @@ static esp_timer_handle_t oneshot_timer;
 uint8_t door_get_state(void) { return door_state; }
 static void door_set_state(uint8_t s) { door_state = s; }
 
-/* Reed switch: hardware reads inverted, so XOR to logical DOOR_OPEN/DOOR_CLOSED. */
-static uint8_t read_door_sensor(void) { return gpio_get_level(DOOR_SENSOR_GPIO) ^ 1; }
+/* Reed switch: with this install's magnet/contact polarity the pin reads
+ * low when the door is closed and high when open, which maps straight onto
+ * DOOR_CLOSED (0) / DOOR_OPEN (1) — no inversion. */
+static uint8_t read_door_sensor(void) { return gpio_get_level(DOOR_SENSOR_GPIO); }
 
 static void kick_door_relay(void) {
   gpio_set_level(DOOR_RELAY_GPIO, 1);
