@@ -22,6 +22,10 @@ static const char *TAG = "OTA";
 #define FIRMWARE_URL      OTA_BASE_URL "/releases/latest/download/garage.bin"
 #define POLL_INTERVAL_MS      (CONFIG_OTA_POLL_INTERVAL_SEC * 1000)
 #define STABLE_BOOT_DELAY_MS  30000  /* survive this long → confirm image (network-independent) */
+#define OTA_POLL_CHUNK_SEC 10           /* granularity for interval changes / check-now */
+static volatile bool s_check_now = false;
+
+void ota_update_check_now(void) { s_check_now = true; }
 
 /* Parse up to major.minor.patch from a version string. A non-numeric/missing
  * component (e.g. the "-dev" suffix) parses as 0. */
@@ -141,12 +145,22 @@ static void ota_task(void *arg) {
     vTaskDelay(STABLE_BOOT_DELAY_MS / portTICK_PERIOD_MS);
     ota_update_mark_valid();
 
+    uint32_t elapsed = 0;               /* seconds accumulated since the last check */
     while (1) {
+        vTaskDelay(pdMS_TO_TICKS(OTA_POLL_CHUNK_SEC * 1000));
+
         if (settings_get_auto_ota_paused()) {
-            ESP_LOGI(TAG, "Auto-OTA paused; skipping GitHub check");
-            vTaskDelay(POLL_INTERVAL_MS / portTICK_PERIOD_MS);
+            elapsed = 0;
+            s_check_now = false;        /* check-now is ignored while paused */
             continue;
         }
+
+        bool due;
+        if (s_check_now) { s_check_now = false; due = true; }
+        else { elapsed += OTA_POLL_CHUNK_SEC; due = elapsed >= settings_get_ota_poll_sec(); }
+        if (!due) continue;
+        elapsed = 0;
+
         char remote[32];
         if (fetch_latest_version(remote, sizeof(remote)) == ESP_OK) {
             if (ota_semver_cmp(remote, FW_VERSION) > 0) {
@@ -158,7 +172,6 @@ static void ota_task(void *arg) {
         } else {
             ESP_LOGW(TAG, "Version check failed; will retry");
         }
-        vTaskDelay(POLL_INTERVAL_MS / portTICK_PERIOD_MS);
     }
 }
 
