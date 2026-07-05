@@ -20,6 +20,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include "ota_upload.h"
+#include "ota_update.h"
 
 static const char *TAG = "WebServer";
 static httpd_handle_t server = NULL;
@@ -334,7 +335,7 @@ static esp_err_t status_get(httpd_req_t *req) {
   settings_counters_t c;
   settings_get_counters(&c);
 
-  static char buf[800];
+  static char buf[960];
   snprintf(buf, sizeof(buf),
     "{\"door_state\":\"%s\",\"door_open_seconds\":%lld,\"lockout\":%s,"
     "\"rssi\":%d,\"rssi_quality\":\"%s\",\"temperature\":%.1f,\"humidity\":%.1f,"
@@ -342,7 +343,8 @@ static esp_err_t status_get(httpd_req_t *req) {
     "\"mac\":\"%02x:%02x:%02x:%02x:%02x:%02x\",\"ip\":\"" IPSTR "\",\"reset_reason\":\"%s\","
     "\"cycles\":%u,\"auto_closes\":%u,\"left_open_trips\":%u,\"faults\":%u,"
     "\"auto_close_faulted\":%s,\"auto_close_sec\":%u,\"left_open_sec\":%u,"
-    "\"auto_ota_paused\":%s}",
+    "\"auto_ota_paused\":%s,"
+    "\"ota_poll_sec\":%u,\"door_move_sec\":%u,\"relay_pulse_ms\":%u}",
     door_state_str(door_get_state()), door_open_duration_us() / 1000000LL,
     settings_get_lockout() ? "true" : "false",
     rssi, q, t, h,
@@ -351,7 +353,9 @@ static esp_err_t status_get(httpd_req_t *req) {
     (unsigned)c.cycles, (unsigned)c.auto_closes, (unsigned)c.left_open_trips, (unsigned)c.faults,
     door_auto_close_faulted() ? "true" : "false",
     (unsigned)settings_get_auto_close_sec(), (unsigned)settings_get_left_open_sec(),
-    settings_get_auto_ota_paused() ? "true" : "false");
+    settings_get_auto_ota_paused() ? "true" : "false",
+    (unsigned)settings_get_ota_poll_sec(), (unsigned)settings_get_door_move_sec(),
+    (unsigned)settings_get_relay_pulse_ms());
 
   httpd_resp_set_type(req, "application/json");
   httpd_resp_send(req, buf, HTTPD_RESP_USE_STRLEN);
@@ -360,13 +364,19 @@ static esp_err_t status_get(httpd_req_t *req) {
 
 static esp_err_t settings_post(httpd_req_t *req) {
   if (require_auth(req) != ESP_OK) return ESP_OK;
-  char buf[128];
+  char buf[192];
   if (read_body(req, buf, sizeof(buf)) < 0) { httpd_resp_send_500(req); return ESP_OK; }
   char v[16];
   uint32_t ac = settings_get_auto_close_sec(), lo = settings_get_left_open_sec();
   if (httpd_query_key_value(buf, "auto_close_sec", v, sizeof(v)) == ESP_OK) ac = atoi(v);
   if (httpd_query_key_value(buf, "left_open_sec",  v, sizeof(v)) == ESP_OK) lo = atoi(v);
   settings_set_timeouts(ac, lo);   /* clamps internally */
+  if (httpd_query_key_value(buf, "ota_poll_min", v, sizeof(v)) == ESP_OK)
+    settings_set_ota_poll_sec((uint32_t)atoi(v) * 60);
+  if (httpd_query_key_value(buf, "door_move_sec", v, sizeof(v)) == ESP_OK)
+    settings_set_door_move_sec((uint32_t)atoi(v));
+  if (httpd_query_key_value(buf, "relay_pulse_ms", v, sizeof(v)) == ESP_OK)
+    settings_set_relay_pulse_ms((uint32_t)atoi(v));
   httpd_resp_sendstr(req, "ok");
   return ESP_OK;
 }
@@ -469,13 +479,39 @@ static esp_err_t auto_ota_post(httpd_req_t *req) {
   return ESP_OK;
 }
 
+//
+// POST /api/ota-check — trigger an immediate version check (no effect while paused).
+//
+static esp_err_t ota_check_post(httpd_req_t *req) {
+  if (require_auth(req) != ESP_OK) return ESP_OK;
+  if (settings_get_auto_ota_paused()) {
+    httpd_resp_sendstr(req, "auto-update is paused — resume first");
+    return ESP_OK;
+  }
+  ota_update_check_now();
+  httpd_resp_sendstr(req, "checking for updates...");
+  return ESP_OK;
+}
+
+//
+// POST /api/reboot — restart the device (response is sent before the restart).
+//
+static esp_err_t reboot_post(httpd_req_t *req) {
+  if (require_auth(req) != ESP_OK) return ESP_OK;
+  httpd_resp_sendstr(req, "rebooting...");
+  ESP_LOGW(TAG, "Reboot requested via web");
+  vTaskDelay(pdMS_TO_TICKS(500));
+  esp_restart();
+  return ESP_OK;   /* not reached */
+}
+
 // ---- lifecycle -----------------------------------------------------------
 
 void web_server_start(void) {
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.server_port = WEB_SERVER_PORT;        /* 80 is taken by the HAP server */
   config.ctrl_port   = WEB_SERVER_CTRL_PORT;   /* HAP uses the default 32768 */
-  config.max_uri_handlers = 10;
+  config.max_uri_handlers = 12;
   config.lru_purge_enable = true;
   if (httpd_start(&server, &config) != ESP_OK) {
     ESP_LOGE(TAG, "httpd start failed");
@@ -490,6 +526,8 @@ void web_server_start(void) {
     { .uri = "/api/password",   .method = HTTP_POST, .handler = password_post },
     { .uri = "/api/ota",        .method = HTTP_POST, .handler = ota_post },
     { .uri = "/api/auto-ota",   .method = HTTP_POST, .handler = auto_ota_post },
+    { .uri = "/api/ota-check",  .method = HTTP_POST, .handler = ota_check_post },
+    { .uri = "/api/reboot",     .method = HTTP_POST, .handler = reboot_post },
   };
   for (size_t i = 0; i < sizeof(uris) / sizeof(uris[0]); i++)
     httpd_register_uri_handler(server, &uris[i]);
