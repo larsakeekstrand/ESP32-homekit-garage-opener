@@ -1,0 +1,16 @@
+[package]
+name = "garage-push"
+version = "0.1.0"
+edition = "2021"
+description = "Push a locally-built firmware image to the ESP32 garage opener over the LAN"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+ureq = "2"
+rpassword = "7"
+base64 = "0.22"
+serde_json = "1"
+
+[[bin]]
+name = "garage-push"
+path = "src/main.rs"

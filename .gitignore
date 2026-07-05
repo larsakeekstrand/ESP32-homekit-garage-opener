@@ -5,3 +5,5 @@ managed_components/
 sdkconfig.old
 # Generated per-developer config (regenerated from sdkconfig.defaults); may hold Wi-Fi creds
 sdkconfig
+# Rust CLI build output
+tools/garage-push/target/
