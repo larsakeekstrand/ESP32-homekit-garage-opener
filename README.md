@@ -9,7 +9,7 @@ Features:
 * Auto-close timer (default 10 min, configurable, 0 = off).
 * Door-left-open HomeKit alert via a Contact Sensor accessory.
 * Vacation/lockout switch to refuse all open and close commands.
-* Local status and configuration web page at `http://<device-ip>/`.
+* Local status and configuration web page at `http://<device-ip>:8080/`.
 
 Schematics for the hardware can be found [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/478886ba8ccb8f31c0db583b10b282738d822965/docs/Schematic_GarageOpener.pdf). The schematics is made using [EasyEDA](https://easyeda.com/)
 
@@ -42,8 +42,10 @@ toggled from both the Home app and the local web page — they stay in sync.
 
 ### Local status and configuration web page
 
-The device serves a status and config page at `http://<device-ip>/` on the local network (plain
-HTTP, no HTTPS, LAN only).
+The device serves a status and config page at `http://<device-ip>:8080/` on the local network (plain
+HTTP, no HTTPS, LAN only). Port **8080** is used because the HomeKit (HAP) server already occupies
+port 80. Find the device's IP from your router, or via mDNS — it advertises over Bonjour, e.g.
+`dns-sd -B _hap._tcp` shows it as `GarageOpener-XXXXXX`.
 
 **First-time setup — set a password promptly.** On the very first visit the device has no password
 and shows a one-time "create password" screen (trust-on-first-use). Anyone on the same LAN can set

@@ -5,6 +5,10 @@ use base64::Engine;
 use clap::{Parser, Subcommand};
 use std::time::{Duration, Instant};
 
+/// Default web-server port. The device's HomeKit (HAP) server owns port 80, so the
+/// diagnostics/config web server listens on 8080.
+const DEFAULT_PORT: u16 = 8080;
+
 #[derive(Parser)]
 #[command(name = "garage-push", about = "Push firmware to the ESP32 garage opener over LAN")]
 struct Cli {
@@ -22,6 +26,8 @@ enum Cmd {
         file: String,
         #[arg(long)]
         password: Option<String>,
+        #[arg(long, default_value_t = DEFAULT_PORT)]
+        port: u16,
     },
     /// Re-enable auto-updates (the GitHub self-poller).
     Resume {
@@ -29,6 +35,8 @@ enum Cmd {
         host: String,
         #[arg(long)]
         password: Option<String>,
+        #[arg(long, default_value_t = DEFAULT_PORT)]
+        port: u16,
     },
     /// Print the device status JSON.
     Status {
@@ -36,6 +44,8 @@ enum Cmd {
         host: String,
         #[arg(long)]
         password: Option<String>,
+        #[arg(long, default_value_t = DEFAULT_PORT)]
+        port: u16,
     },
 }
 
@@ -57,9 +67,11 @@ fn auth_header(pw: &str) -> String {
 fn main() {
     let cli = Cli::parse();
     let result = match cli.cmd {
-        Cmd::Push { host, file, password } => push(&host, &file, resolve_password(password)),
-        Cmd::Resume { host, password } => resume(&host, resolve_password(password)),
-        Cmd::Status { host, password } => status(&host, resolve_password(password)),
+        Cmd::Push { host, file, password, port } => {
+            push(&host, port, &file, resolve_password(password))
+        }
+        Cmd::Resume { host, password, port } => resume(&host, port, resolve_password(password)),
+        Cmd::Status { host, password, port } => status(&host, port, resolve_password(password)),
     };
     if let Err(e) = result {
         eprintln!("error: {e}");
@@ -79,10 +91,10 @@ fn ureq_err(context: &str, e: ureq::Error) -> String {
     }
 }
 
-fn push(host: &str, file: &str, pw: String) -> Result<(), String> {
+fn push(host: &str, port: u16, file: &str, pw: String) -> Result<(), String> {
     let data = std::fs::read(file).map_err(|e| format!("reading {file}: {e}"))?;
     let auth = auth_header(&pw);
-    let url = format!("http://{host}/api/ota");
+    let url = format!("http://{host}:{port}/api/ota");
     eprintln!("Uploading {} ({} bytes) to {url} ...", file, data.len());
 
     match ureq::post(&url)
@@ -102,12 +114,12 @@ fn push(host: &str, file: &str, pw: String) -> Result<(), String> {
     }
 
     eprintln!("Waiting for the device to reboot into the new image ...");
-    wait_for_reboot(host, &auth)
+    wait_for_reboot(host, port, &auth)
 }
 
-fn resume(host: &str, pw: String) -> Result<(), String> {
+fn resume(host: &str, port: u16, pw: String) -> Result<(), String> {
     let auth = auth_header(&pw);
-    let url = format!("http://{host}/api/auto-ota");
+    let url = format!("http://{host}:{port}/api/auto-ota");
     ureq::post(&url)
         .set("Authorization", &auth)
         .send_string("on=1")
@@ -116,15 +128,15 @@ fn resume(host: &str, pw: String) -> Result<(), String> {
     Ok(())
 }
 
-fn status(host: &str, pw: String) -> Result<(), String> {
+fn status(host: &str, port: u16, pw: String) -> Result<(), String> {
     let auth = auth_header(&pw);
-    let json = fetch_status(host, &auth)?;
+    let json = fetch_status(host, port, &auth)?;
     println!("{}", serde_json::to_string_pretty(&json).unwrap_or_else(|_| json.to_string()));
     Ok(())
 }
 
-fn fetch_status(host: &str, auth: &str) -> Result<serde_json::Value, String> {
-    let url = format!("http://{host}/api/status");
+fn fetch_status(host: &str, port: u16, auth: &str) -> Result<serde_json::Value, String> {
+    let url = format!("http://{host}:{port}/api/status");
     let body = ureq::get(&url)
         .set("Authorization", auth)
         .call()
@@ -135,12 +147,12 @@ fn fetch_status(host: &str, auth: &str) -> Result<serde_json::Value, String> {
 }
 
 /// Poll /api/status until the device comes back up, then print its version.
-fn wait_for_reboot(host: &str, auth: &str) -> Result<(), String> {
+fn wait_for_reboot(host: &str, port: u16, auth: &str) -> Result<(), String> {
     // Give the device a moment to actually drop the connection and reboot.
     std::thread::sleep(Duration::from_secs(3));
     let deadline = Instant::now() + Duration::from_secs(90);
     while Instant::now() < deadline {
-        if let Ok(json) = fetch_status(host, auth) {
+        if let Ok(json) = fetch_status(host, port, auth) {
             let ver = json.get("fw_version").and_then(|v| v.as_str()).unwrap_or("?");
             let paused = json
                 .get("auto_ota_paused")
@@ -150,7 +162,8 @@ fn wait_for_reboot(host: &str, auth: &str) -> Result<(), String> {
                 "Device is up. Running firmware {ver}. Auto-updates: {}.",
                 if paused { "PAUSED" } else { "on" }
             );
-            println!("Run `garage-push resume --host {host}` to re-enable auto-updates.");
+            let port_arg = if port == DEFAULT_PORT { String::new() } else { format!(" --port {port}") };
+            println!("Run `garage-push resume --host {host}{port_arg}` to re-enable auto-updates.");
             return Ok(());
         }
         std::thread::sleep(Duration::from_secs(2));

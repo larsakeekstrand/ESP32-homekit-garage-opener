@@ -24,6 +24,13 @@
 static const char *TAG = "WebServer";
 static httpd_handle_t server = NULL;
 
+/* The HomeKit (HAP) server already owns port 80 (CONFIG_HAP_HTTP_SERVER_PORT)
+ * and the default esp_http_server control port 32768, so this diagnostics/config
+ * server must use a different server AND control port — otherwise httpd_start
+ * fails with "address already in use" and the web page never comes up. */
+#define WEB_SERVER_PORT      8080
+#define WEB_SERVER_CTRL_PORT 32769
+
 // ---- static pages --------------------------------------------------------
 
 // First-run "create password" page (served while no password is set).
@@ -337,6 +344,8 @@ static esp_err_t auto_ota_post(httpd_req_t *req) {
 
 void web_server_start(void) {
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+  config.server_port = WEB_SERVER_PORT;        /* 80 is taken by the HAP server */
+  config.ctrl_port   = WEB_SERVER_CTRL_PORT;   /* HAP uses the default 32768 */
   config.max_uri_handlers = 10;
   config.lru_purge_enable = true;
   if (httpd_start(&server, &config) != ESP_OK) {
@@ -355,5 +364,5 @@ void web_server_start(void) {
   };
   for (size_t i = 0; i < sizeof(uris) / sizeof(uris[0]); i++)
     httpd_register_uri_handler(server, &uris[i]);
-  ESP_LOGI(TAG, "Web server started on port 80");
+  ESP_LOGI(TAG, "Web server started on port %d", WEB_SERVER_PORT);
 }
