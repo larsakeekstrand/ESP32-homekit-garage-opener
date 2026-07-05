@@ -60,9 +60,25 @@ password). From there you can:
 * View live status: door state, lockout, Wi-Fi RSSI, temperature, humidity, uptime.
 * View system info: firmware version, free heap, MAC address, IP address, reset reason.
 * View persisted counters: door cycles, auto-closes, door-left-open trips, faults.
-* Edit the auto-close timeout and door-left-open threshold.
+* Edit the auto-close timeout, door-left-open threshold, **OTA poll interval** (5–1440 min),
+  **door-move timeout** (3–30 s), and **relay pulse length** (100–2000 ms). All settings persist
+  in NVS. The OTA poll interval takes effect within ~10 s — no reboot needed.
+* Trigger an immediate GitHub version check with **Check for updates now** (no effect while
+  auto-updates are paused — resume first).
+* Restart the device with **Reboot device** (asks for confirmation; HomeKit and the web page drop
+  for ~15 s while it boots).
 * Change the admin password.
 * Reset a latched auto-close fault (see below).
+
+**Editing the web page source.** The page HTML and JavaScript live in `tools/web/page.html`
+(main status/config page) and `tools/web/setup.html` (first-time password setup). After editing
+either file, regenerate the embedded C string literals:
+
+```bash
+python3 tools/gen_web_page.py
+```
+
+This rewrites the relevant sections of `main/web_server.c`. Rebuild and flash as normal.
 
 ### Auto-close fault detection
 
