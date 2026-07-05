@@ -17,6 +17,9 @@
 #include "door_control.h"
 #include "hap_garage.h"
 #include "dht_sensor.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include "ota_upload.h"
 
 static const char *TAG = "WebServer";
 static httpd_handle_t server = NULL;
@@ -60,7 +63,8 @@ static const char PAGE_HTML[] =
 "<tr><td>Free heap</td><td id=heap>…</td></tr>"
 "<tr><td>MAC</td><td id=mac>…</td></tr>"
 "<tr><td>IP</td><td id=ip>…</td></tr>"
-"<tr><td>Reset reason</td><td id=rst>…</td></tr></table></div>"
+"<tr><td>Reset reason</td><td id=rst>…</td></tr>"
+"<tr><td>Auto-update</td><td><input type=checkbox id=autoota onchange=\"post('/api/auto-ota','on='+(this.checked?1:0))\"> <span id=autoota_l></span></td></tr></table></div>"
 "<div class=card><h3>Counters</h3><table>"
 "<tr><td>Door cycles</td><td id=cycles>…</td></tr>"
 "<tr><td>Auto-closes</td><td id=ac>…</td></tr>"
@@ -81,6 +85,7 @@ static const char PAGE_HTML[] =
 "temp.textContent=d.temperature.toFixed(1)+' °C';hum.textContent=d.humidity.toFixed(0)+' %';"
 "uptime.textContent=fmt(d.uptime_seconds);fw.textContent=d.fw_version;heap.textContent=d.free_heap+' B';"
 "mac.textContent=d.mac;ip.textContent=d.ip;rst.textContent=d.reset_reason;"
+"autoota.checked=!d.auto_ota_paused;autoota_l.textContent=d.auto_ota_paused?'PAUSED':'on';"
 "cycles.textContent=d.cycles;ac.textContent=d.auto_closes;lo.textContent=d.left_open_trips;flt.textContent=d.faults;"
 "fault.style.display=d.auto_close_faulted?'block':'none';"
 "if(document.activeElement!=ac_sec)ac_sec.value=d.auto_close_sec;"
@@ -193,14 +198,15 @@ static esp_err_t status_get(httpd_req_t *req) {
   settings_counters_t c;
   settings_get_counters(&c);
 
-  static char buf[720];
+  static char buf[800];
   snprintf(buf, sizeof(buf),
     "{\"door_state\":\"%s\",\"door_open_seconds\":%lld,\"lockout\":%s,"
     "\"rssi\":%d,\"rssi_quality\":\"%s\",\"temperature\":%.1f,\"humidity\":%.1f,"
     "\"uptime_seconds\":%lld,\"fw_version\":\"%s\",\"free_heap\":%u,"
     "\"mac\":\"%02x:%02x:%02x:%02x:%02x:%02x\",\"ip\":\"" IPSTR "\",\"reset_reason\":\"%s\","
     "\"cycles\":%u,\"auto_closes\":%u,\"left_open_trips\":%u,\"faults\":%u,"
-    "\"auto_close_faulted\":%s,\"auto_close_sec\":%u,\"left_open_sec\":%u}",
+    "\"auto_close_faulted\":%s,\"auto_close_sec\":%u,\"left_open_sec\":%u,"
+    "\"auto_ota_paused\":%s}",
     door_state_str(door_get_state()), door_open_duration_us() / 1000000LL,
     settings_get_lockout() ? "true" : "false",
     rssi, q, t, h,
@@ -208,7 +214,8 @@ static esp_err_t status_get(httpd_req_t *req) {
     mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], IP2STR(&ip.ip), reset_reason_str(),
     (unsigned)c.cycles, (unsigned)c.auto_closes, (unsigned)c.left_open_trips, (unsigned)c.faults,
     door_auto_close_faulted() ? "true" : "false",
-    (unsigned)settings_get_auto_close_sec(), (unsigned)settings_get_left_open_sec());
+    (unsigned)settings_get_auto_close_sec(), (unsigned)settings_get_left_open_sec(),
+    settings_get_auto_ota_paused() ? "true" : "false");
 
   httpd_resp_set_type(req, "application/json");
   httpd_resp_send(req, buf, HTTPD_RESP_USE_STRLEN);
@@ -264,11 +271,73 @@ static esp_err_t password_post(httpd_req_t *req) {
   return ESP_OK;
 }
 
+//
+// POST /api/ota — stream a firmware image into the inactive slot, then reboot.
+//
+static esp_err_t ota_post(httpd_req_t *req) {
+  if (require_auth(req) != ESP_OK) return ESP_OK;
+  if (ota_upload_in_progress()) {
+    httpd_resp_set_status(req, "409 Conflict");
+    httpd_resp_sendstr(req, "an OTA upload is already in progress");
+    return ESP_OK;
+  }
+  if (ota_upload_begin() != ESP_OK) { httpd_resp_send_500(req); return ESP_OK; }
+
+  char buf[1024];
+  int remaining = req->content_len;
+  esp_err_t err = ESP_OK;
+  while (remaining > 0) {
+    int want = remaining < (int)sizeof(buf) ? remaining : (int)sizeof(buf);
+    int r = httpd_req_recv(req, buf, want);
+    if (r == HTTPD_SOCK_ERR_TIMEOUT) continue;
+    if (r <= 0) { err = ESP_FAIL; break; }
+    err = ota_upload_write(buf, r);
+    if (err != ESP_OK) break;
+    remaining -= r;
+  }
+  if (err != ESP_OK) {
+    ota_upload_abort();
+    httpd_resp_set_status(req, "400 Bad Request");
+    httpd_resp_sendstr(req, "OTA write/validation failed (wrong or corrupt image?)");
+    return ESP_OK;
+  }
+  if (ota_upload_end() != ESP_OK) {
+    ota_upload_abort();
+    httpd_resp_set_status(req, "400 Bad Request");
+    httpd_resp_sendstr(req, "OTA finalize failed (image invalid or too small)");
+    return ESP_OK;
+  }
+
+  settings_set_auto_ota_paused(true);   /* so the poller won't revert the beta */
+  httpd_resp_set_type(req, "application/json");
+  httpd_resp_sendstr(req, "{\"status\":\"ok\",\"rebooting\":true}");
+  ESP_LOGI(TAG, "OTA upload applied; rebooting into new image");
+  vTaskDelay(pdMS_TO_TICKS(500));       /* let the response flush before reboot */
+  esp_restart();
+  return ESP_OK;                        /* not reached */
+}
+
+//
+// POST /api/auto-ota — enable/disable the GitHub self-poller. Body: on=0|1
+// (on=1 => auto-updates enabled/paused=false; on=0 => paused=true).
+//
+static esp_err_t auto_ota_post(httpd_req_t *req) {
+  if (require_auth(req) != ESP_OK) return ESP_OK;
+  char buf[32];
+  if (read_body(req, buf, sizeof(buf)) < 0) { httpd_resp_send_500(req); return ESP_OK; }
+  char v[8];
+  bool enabled = !settings_get_auto_ota_paused();
+  if (httpd_query_key_value(buf, "on", v, sizeof(v)) == ESP_OK) enabled = (atoi(v) != 0);
+  settings_set_auto_ota_paused(!enabled);
+  httpd_resp_sendstr(req, "ok");
+  return ESP_OK;
+}
+
 // ---- lifecycle -----------------------------------------------------------
 
 void web_server_start(void) {
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-  config.max_uri_handlers = 8;
+  config.max_uri_handlers = 10;
   config.lru_purge_enable = true;
   if (httpd_start(&server, &config) != ESP_OK) {
     ESP_LOGE(TAG, "httpd start failed");
@@ -281,6 +350,8 @@ void web_server_start(void) {
     { .uri = "/api/lockout",    .method = HTTP_POST, .handler = lockout_post },
     { .uri = "/api/fault-reset",.method = HTTP_POST, .handler = fault_reset_post },
     { .uri = "/api/password",   .method = HTTP_POST, .handler = password_post },
+    { .uri = "/api/ota",        .method = HTTP_POST, .handler = ota_post },
+    { .uri = "/api/auto-ota",   .method = HTTP_POST, .handler = auto_ota_post },
   };
   for (size_t i = 0; i < sizeof(uris) / sizeof(uris[0]); i++)
     httpd_register_uri_handler(server, &uris[i]);
