@@ -47,7 +47,10 @@ HTTP, no HTTPS, LAN only).
 
 **First-time setup — set a password promptly.** On the very first visit the device has no password
 and shows a one-time "create password" screen (trust-on-first-use). Anyone on the same LAN can set
-the password until you do, so set it immediately after first access.
+the password until you do, so set it immediately after first access. The firmware-flash endpoint
+(`POST /api/ota`) is equally open during this window — since it can replace the running firmware,
+set the password promptly, especially on an untrusted LAN (uploaded images are validated against the
+`garage` app descriptor and the endpoint is LAN-only, but the credential gate is the main barrier).
 
 After the password is set, the page requires **HTTP Basic Auth** (username `admin`, your chosen
 password). From there you can:
@@ -206,8 +209,11 @@ correct project name and magic word. A wrong or corrupt image is rejected and th
 is untouched. An image that does boot but then crashes or hangs is **automatically rolled back** by
 the bootloader (same rollback mechanism as GitHub OTA).
 
-**Auto-update pause.** A successful `push` automatically pauses the hourly GitHub poller (persisted
-in flash) so the beta is not reverted on the next poll. Re-enable auto-updates with:
+**Auto-update pause.** A successful `push` automatically pauses the hourly GitHub poller; the pause
+flag is stored in NVS and survives reboots. Consequently, if the pushed beta fails to boot and the
+bootloader rolls back to the previous image, that restored image comes back with auto-updates still
+paused — run `garage-push resume --host <ip>` (or toggle the web-page **Auto-update** switch) to
+re-enable them. Re-enable auto-updates with:
 
 ```bash
 cargo run -- resume --host <ip>
