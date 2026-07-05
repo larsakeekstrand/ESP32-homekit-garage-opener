@@ -202,7 +202,6 @@ static const char PAGE_HTML[] =
 "      <div class=\"field\"><label>Auto-close after</label><span class=\"num-in\"><input type=\"number\" id=\"ac_sec\" min=\"0\" max=\"3600\" value=\"600\"> s</span></div>\n"
 "      <div class=\"field\"><label>Left-open alert</label><span class=\"num-in\"><input type=\"number\" id=\"lo_sec\" min=\"0\" max=\"3600\" value=\"300\"> s</span></div>\n"
 "      <p class=\"hint\" id=\"hint\"></p>\n"
-"      <button class=\"save\" onclick=\"post('/api/settings','auto_close_sec='+ac_sec.value+'&left_open_sec='+lo_sec.value+'&ota_poll_min='+ota_min.value+'&door_move_sec='+move_sec.value+'&relay_pulse_ms='+pulse_ms.value)\">Save settings</button>\n"
 "    </div>\n"
 "\n"
 "    <div class=\"card\">\n"
@@ -211,8 +210,9 @@ static const char PAGE_HTML[] =
 "      <div class=\"field\"><label>Relay pulse</label><span class=\"num-in\"><input type=\"number\" id=\"pulse_ms\" min=\"100\" max=\"2000\" value=\"300\"> ms</span></div>\n"
 "    </div>\n"
 "  </div>\n"
-"  <div style=\"margin-top:16px;text-align:center\">\n"
-"    <button style=\"background:#3a1d1d;color:#ffb4b4;border:1px solid rgba(255,106,106,.4)\" onclick=\"if(confirm('Reboot the device now? HomeKit and the web page drop for ~15 s.'))post('/api/reboot','')\">Reboot device</button>\n"
+"  <div style=\"max-width:760px;margin:18px auto 0;display:grid;gap:10px\">\n"
+"    <button class=\"save\" style=\"margin-top:0\" onclick=\"post('/api/settings','auto_close_sec='+ac_sec.value+'&left_open_sec='+lo_sec.value+'&ota_poll_min='+ota_min.value+'&door_move_sec='+move_sec.value+'&relay_pulse_ms='+pulse_ms.value)\">Save all settings</button>\n"
+"    <button style=\"justify-self:center;background:#3a1d1d;color:#ffb4b4;border:1px solid rgba(255,106,106,.4)\" onclick=\"if(confirm('Reboot the device now? HomeKit and the web page drop for ~15 s.'))post('/api/reboot','')\">Reboot device</button>\n"
 "  </div>\n"
 "</div>\n"
 "<script>\n"
@@ -503,6 +503,7 @@ static esp_err_t auto_ota_post(httpd_req_t *req) {
 static esp_err_t ota_check_post(httpd_req_t *req) {
   if (require_auth(req) != ESP_OK) return ESP_OK;
   if (settings_get_auto_ota_paused()) {
+    httpd_resp_set_status(req, "409 Conflict");   /* non-2xx so the page surfaces the message */
     httpd_resp_sendstr(req, "auto-update is paused — resume first");
     return ESP_OK;
   }

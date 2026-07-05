@@ -79,6 +79,8 @@ python3 tools/gen_web_page.py
 ```
 
 This rewrites the relevant sections of `main/web_server.c`. Rebuild and flash as normal.
+Edit only `tools/web/*.html` — the `PAGE_HTML` / `SETUP_HTML` C strings in `web_server.c` are
+generated and will be silently overwritten by the next `gen_web_page.py` run.
 
 ### Auto-close fault detection
 

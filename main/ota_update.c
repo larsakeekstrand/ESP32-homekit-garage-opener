@@ -20,7 +20,6 @@ static const char *TAG = "OTA";
 #define OTA_BASE_URL      CONFIG_OTA_GITHUB_BASE_URL
 #define VERSION_URL       OTA_BASE_URL "/releases/latest/download/version.txt"
 #define FIRMWARE_URL      OTA_BASE_URL "/releases/latest/download/garage.bin"
-#define POLL_INTERVAL_MS      (CONFIG_OTA_POLL_INTERVAL_SEC * 1000)
 #define STABLE_BOOT_DELAY_MS  30000  /* survive this long → confirm image (network-independent) */
 #define OTA_POLL_CHUNK_SEC 10           /* granularity for interval changes / check-now */
 static volatile bool s_check_now = false;
@@ -145,7 +144,9 @@ static void ota_task(void *arg) {
     vTaskDelay(STABLE_BOOT_DELAY_MS / portTICK_PERIOD_MS);
     ota_update_mark_valid();
 
-    uint32_t elapsed = 0;               /* seconds accumulated since the last check */
+    /* Start "due" so the first version check runs ~1 chunk after boot (not a full
+     * poll interval later) — OTA is the self-heal path for a bad release. */
+    uint32_t elapsed = settings_get_ota_poll_sec();
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(OTA_POLL_CHUNK_SEC * 1000));
 
