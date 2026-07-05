@@ -19,6 +19,11 @@ void     settings_set_timeouts(uint32_t auto_close_sec, uint32_t left_open_sec);
 bool settings_get_lockout(void);
 void settings_set_lockout(bool on);
 
+/* Auto-OTA pause flag (persisted). When true, the GitHub self-poller is
+ * suspended so a hand-pushed beta is not reverted. */
+bool settings_get_auto_ota_paused(void);
+void settings_set_auto_ota_paused(bool paused);
+
 /* Counters — incremented in RAM, flushed to NVS in batches to limit flash wear. */
 typedef struct {
   uint32_t cycles;

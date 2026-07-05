@@ -20,6 +20,7 @@ static const char *TAG = "Settings";
 static uint32_t s_auto_close_sec;
 static uint32_t s_left_open_sec;
 static bool     s_lockout;
+static bool     s_ota_paused;
 static settings_counters_t s_counters;
 static uint8_t  s_pw[48];       /* 16-byte salt + 32-byte SHA-256 */
 static bool     s_pw_set;
@@ -67,6 +68,7 @@ void settings_init(void) {
   s_auto_close_sec = CONFIG_AUTO_CLOSE_DEFAULT_SEC;
   s_left_open_sec  = CONFIG_LEFT_OPEN_DEFAULT_SEC;
   s_lockout = false;
+  s_ota_paused = false;
   memset(&s_counters, 0, sizeof(s_counters));
   s_pw_set = false;
 
@@ -77,14 +79,16 @@ void settings_init(void) {
     nvs_get_u32(h, "left_open",  &s_left_open_sec);
     uint8_t lk = 0;
     if (nvs_get_u8(h, "lockout", &lk) == ESP_OK) s_lockout = lk;
+    uint8_t op = 0;
+    if (nvs_get_u8(h, "ota_paused", &op) == ESP_OK) s_ota_paused = op;
     size_t csz = sizeof(s_counters);
     nvs_get_blob(h, "counters", &s_counters, &csz);
     size_t psz = sizeof(s_pw);
     if (nvs_get_blob(h, "pw", s_pw, &psz) == ESP_OK && psz == sizeof(s_pw)) s_pw_set = true;
     nvs_close(h);
   }
-  ESP_LOGI(TAG, "loaded: auto_close=%u left_open=%u lockout=%d pw_set=%d",
-           s_auto_close_sec, s_left_open_sec, s_lockout, s_pw_set);
+  ESP_LOGI(TAG, "loaded: auto_close=%u left_open=%u lockout=%d ota_paused=%d pw_set=%d",
+           s_auto_close_sec, s_left_open_sec, s_lockout, s_ota_paused, s_pw_set);
 }
 
 uint32_t settings_get_auto_close_sec(void) { return s_auto_close_sec; }
@@ -112,6 +116,16 @@ void settings_set_lockout(bool on) {
   ns_open(&h, NVS_READWRITE);
   if (h) { nvs_set_u8(h, "lockout", on ? 1 : 0); nvs_commit(h); nvs_close(h); }
   ESP_LOGI(TAG, "lockout = %d", on);
+}
+
+bool settings_get_auto_ota_paused(void) { return s_ota_paused; }
+
+void settings_set_auto_ota_paused(bool paused) {
+  s_ota_paused = paused;
+  nvs_handle_t h;
+  ns_open(&h, NVS_READWRITE);
+  if (h) { nvs_set_u8(h, "ota_paused", paused ? 1 : 0); nvs_commit(h); nvs_close(h); }
+  ESP_LOGI(TAG, "auto_ota_paused = %d", paused);
 }
 
 //
