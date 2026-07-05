@@ -67,6 +67,18 @@ fn main() {
     }
 }
 
+/// Turn a ureq error into a message that includes the device's response body
+/// on an HTTP error status (not just the numeric code).
+fn ureq_err(context: &str, e: ureq::Error) -> String {
+    match e {
+        ureq::Error::Status(code, resp) => {
+            let body = resp.into_string().unwrap_or_default();
+            format!("{context}: HTTP {code}: {body}")
+        }
+        e => format!("{context}: {e}"),
+    }
+}
+
 fn push(host: &str, file: &str, pw: String) -> Result<(), String> {
     let data = std::fs::read(file).map_err(|e| format!("reading {file}: {e}"))?;
     let auth = auth_header(&pw);
@@ -99,7 +111,7 @@ fn resume(host: &str, pw: String) -> Result<(), String> {
     ureq::post(&url)
         .set("Authorization", &auth)
         .send_string("on=1")
-        .map_err(|e| format!("resume failed: {e}"))?;
+        .map_err(|e| ureq_err("resume failed", e))?;
     println!("Auto-updates re-enabled.");
     Ok(())
 }
@@ -116,7 +128,7 @@ fn fetch_status(host: &str, auth: &str) -> Result<serde_json::Value, String> {
     let body = ureq::get(&url)
         .set("Authorization", auth)
         .call()
-        .map_err(|e| format!("status request failed: {e}"))?
+        .map_err(|e| ureq_err("status request failed", e))?
         .into_string()
         .map_err(|e| format!("reading status body: {e}"))?;
     serde_json::from_str(&body).map_err(|e| format!("parsing status JSON: {e}"))
