@@ -13,6 +13,7 @@
 #include <esp_system.h>
 
 #include "ota_update.h"
+#include "settings.h"
 
 static const char *TAG = "OTA";
 
@@ -141,6 +142,11 @@ static void ota_task(void *arg) {
     ota_update_mark_valid();
 
     while (1) {
+        if (settings_get_auto_ota_paused()) {
+            ESP_LOGI(TAG, "Auto-OTA paused; skipping GitHub check");
+            vTaskDelay(POLL_INTERVAL_MS / portTICK_PERIOD_MS);
+            continue;
+        }
         char remote[32];
         if (fetch_latest_version(remote, sizeof(remote)) == ESP_OK) {
             if (ota_semver_cmp(remote, FW_VERSION) > 0) {
