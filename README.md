@@ -168,6 +168,53 @@ The poll interval and repo base URL are configurable via `idf.py menuconfig` →
 > **Security note:** anyone who can publish a GitHub Release to this repo can push firmware to the
 > device. Images are not cryptographically signed — acceptable for a personal repo.
 
+### LAN push-OTA (forced / beta updates)
+
+You can push a locally-built image directly to the device over the local network — useful for
+testing a beta build without cutting a GitHub release.
+
+**Build a versioned beta first.** A build with the default `FW_VERSION=0.0.0-dev` is treated as
+*older* than the latest release by the hourly poller, so it would be reverted on the next poll.
+Pass a real version to avoid that:
+
+```bash
+idf.py -DFW_VERSION=1.2.0-beta build
+```
+
+**Upload with `garage-push`.** The CLI lives at `tools/garage-push/` (Rust). Build and run it with
+`cargo`:
+
+```bash
+cd tools/garage-push
+cargo build                            # or: cargo run -- <subcommand>
+```
+
+Subcommands:
+
+| Subcommand | What it does |
+|------------|-------------|
+| `push --host <ip> --file build/garage.bin` | Uploads the image to the device, waits for it to reboot into the new firmware |
+| `resume --host <ip>` | Re-enables the hourly GitHub auto-update poller |
+| `status --host <ip>` | Prints the device status JSON |
+
+The `push` subcommand authenticates with HTTP Basic Auth (username `admin`, your web page password).
+The password is resolved in order: `--password <pw>` flag → `$GARAGE_PASSWORD` environment variable
+→ interactive prompt.
+
+The device validates the uploaded image before flashing: it checks the app descriptor for the
+correct project name and magic word. A wrong or corrupt image is rejected and the running firmware
+is untouched. An image that does boot but then crashes or hangs is **automatically rolled back** by
+the bootloader (same rollback mechanism as GitHub OTA).
+
+**Auto-update pause.** A successful `push` automatically pauses the hourly GitHub poller (persisted
+in flash) so the beta is not reverted on the next poll. Re-enable auto-updates with:
+
+```bash
+cargo run -- resume --host <ip>
+```
+
+Or toggle the **Auto-update** switch on the local web page — it shows **on** or **PAUSED**.
+
 ### Wi-Fi credentials & OTA
 
 Wi-Fi credentials are stored in the **`nvs` flash partition**, which OTA never touches (OTA only
