@@ -10,9 +10,6 @@
 #define DOOR_OPEN   1
 #define DOOR_CLOSED 0
 
-/* Failsafe: max time a move may take before we trust the sensor (µs). */
-#define DOOR_MOVING_MAXTIME 8000000
-
 /* Current logical door state (HOMEKIT_CHARACTERISTIC_CURRENT_DOOR_STATE_*). */
 uint8_t door_get_state(void);
 

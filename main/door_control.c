@@ -36,6 +36,11 @@ static uint32_t attempts_this_hour;
 
 uint8_t door_get_state(void) { return door_state; }
 
+/* Door-move / auto-close-verify window in microseconds, from settings. */
+static int64_t door_move_us(void) {
+  return (int64_t)settings_get_door_move_sec() * 1000000LL;
+}
+
 //
 // Set the logical door state and maintain derived state: the open-since
 // timestamp, the auto-close fault latch (auto-clears on a genuine CLOSED),
@@ -68,7 +73,7 @@ static uint8_t read_door_sensor(void) { return gpio_get_level(DOOR_SENSOR_GPIO);
 
 static void kick_door_relay(void) {
   gpio_set_level(DOOR_RELAY_GPIO, 1);
-  vTaskDelay(300 / portTICK_PERIOD_MS);
+  vTaskDelay(pdMS_TO_TICKS(settings_get_relay_pulse_ms()));
   gpio_set_level(DOOR_RELAY_GPIO, 0);
 }
 
@@ -105,7 +110,7 @@ void door_handle_homekit_request(void) {
     door_set_state(HOMEKIT_CHARACTERISTIC_CURRENT_DOOR_STATE_OPENING);
     ESP_LOGI(TAG, "Received request to open door. Opening.");
   }
-  esp_timer_start_once(oneshot_timer, DOOR_MOVING_MAXTIME);
+  esp_timer_start_once(oneshot_timer, door_move_us());
 }
 
 void door_control_init(void) {
@@ -228,8 +233,8 @@ static void door_control_tick(void) {
   door_set_state(HOMEKIT_CHARACTERISTIC_CURRENT_DOOR_STATE_CLOSING);
   hap_garage_send_current_door_state(HOMEKIT_CHARACTERISTIC_CURRENT_DOOR_STATE_CLOSING);
   hap_garage_send_target_door_state(HOMEKIT_CHARACTERISTIC_TARGET_DOOR_STATE_CLOSED);
-  esp_timer_start_once(oneshot_timer, DOOR_MOVING_MAXTIME);   /* existing 8 s failsafe */
-  auto_close_verify_deadline_us = now + DOOR_MOVING_MAXTIME;
+  esp_timer_start_once(oneshot_timer, door_move_us());
+  auto_close_verify_deadline_us = now + door_move_us();
 }
 
 void door_control_run_loop(void) {
