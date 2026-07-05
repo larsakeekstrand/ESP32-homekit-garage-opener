@@ -24,6 +24,14 @@ void settings_set_lockout(bool on);
 bool settings_get_auto_ota_paused(void);
 void settings_set_auto_ota_paused(bool paused);
 
+/* Runtime tunables (persisted). Setters clamp to range. */
+uint32_t settings_get_ota_poll_sec(void);   /* 300..86400 */
+void     settings_set_ota_poll_sec(uint32_t sec);
+uint32_t settings_get_door_move_sec(void);  /* 3..30 */
+void     settings_set_door_move_sec(uint32_t sec);
+uint32_t settings_get_relay_pulse_ms(void); /* 100..2000 */
+void     settings_set_relay_pulse_ms(uint32_t ms);
+
 /* Counters — incremented in RAM, flushed to NVS in batches to limit flash wear. */
 typedef struct {
   uint32_t cycles;

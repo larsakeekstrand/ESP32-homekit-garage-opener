@@ -21,6 +21,9 @@ static uint32_t s_auto_close_sec;
 static uint32_t s_left_open_sec;
 static bool     s_lockout;
 static bool     s_ota_paused;
+static uint32_t s_ota_poll_sec;
+static uint32_t s_door_move_sec;
+static uint32_t s_relay_pulse_ms;
 static settings_counters_t s_counters;
 static uint8_t  s_pw[48];       /* 16-byte salt + 32-byte SHA-256 */
 static bool     s_pw_set;
@@ -34,6 +37,10 @@ static uint32_t clamp_timeout(uint32_t v) {
   if (v < TIMEOUT_MIN) return TIMEOUT_MIN;
   if (v > TIMEOUT_MAX) return TIMEOUT_MAX;
   return v;
+}
+
+static uint32_t clampu(uint32_t v, uint32_t lo, uint32_t hi) {
+  return v < lo ? lo : v > hi ? hi : v;
 }
 
 //
@@ -69,6 +76,9 @@ void settings_init(void) {
   s_left_open_sec  = CONFIG_LEFT_OPEN_DEFAULT_SEC;
   s_lockout = false;
   s_ota_paused = false;
+  s_ota_poll_sec   = CONFIG_OTA_POLL_INTERVAL_SEC;
+  s_door_move_sec  = CONFIG_DOOR_MOVE_TIMEOUT_SEC;
+  s_relay_pulse_ms = CONFIG_RELAY_PULSE_MS;
   memset(&s_counters, 0, sizeof(s_counters));
   s_pw_set = false;
 
@@ -81,6 +91,9 @@ void settings_init(void) {
     if (nvs_get_u8(h, "lockout", &lk) == ESP_OK) s_lockout = lk;
     uint8_t op = 0;
     if (nvs_get_u8(h, "ota_paused", &op) == ESP_OK) s_ota_paused = op;
+    nvs_get_u32(h, "ota_poll",  &s_ota_poll_sec);
+    nvs_get_u32(h, "door_move", &s_door_move_sec);
+    nvs_get_u32(h, "relay_ms",  &s_relay_pulse_ms);
     size_t csz = sizeof(s_counters);
     nvs_get_blob(h, "counters", &s_counters, &csz);
     size_t psz = sizeof(s_pw);
@@ -126,6 +139,32 @@ void settings_set_auto_ota_paused(bool paused) {
   ns_open(&h, NVS_READWRITE);
   if (h) { nvs_set_u8(h, "ota_paused", paused ? 1 : 0); nvs_commit(h); nvs_close(h); }
   ESP_LOGI(TAG, "auto_ota_paused = %d", paused);
+}
+
+uint32_t settings_get_ota_poll_sec(void)   { return s_ota_poll_sec; }
+uint32_t settings_get_door_move_sec(void)  { return s_door_move_sec; }
+uint32_t settings_get_relay_pulse_ms(void) { return s_relay_pulse_ms; }
+
+static void save_u32(const char *key, uint32_t val) {
+  nvs_handle_t h;
+  ns_open(&h, NVS_READWRITE);
+  if (h) { nvs_set_u32(h, key, val); nvs_commit(h); nvs_close(h); }
+}
+
+void settings_set_ota_poll_sec(uint32_t sec) {
+  s_ota_poll_sec = clampu(sec, 300, 86400);
+  save_u32("ota_poll", s_ota_poll_sec);
+  ESP_LOGI(TAG, "ota_poll_sec = %u", s_ota_poll_sec);
+}
+void settings_set_door_move_sec(uint32_t sec) {
+  s_door_move_sec = clampu(sec, 3, 30);
+  save_u32("door_move", s_door_move_sec);
+  ESP_LOGI(TAG, "door_move_sec = %u", s_door_move_sec);
+}
+void settings_set_relay_pulse_ms(uint32_t ms) {
+  s_relay_pulse_ms = clampu(ms, 100, 2000);
+  save_u32("relay_ms", s_relay_pulse_ms);
+  ESP_LOGI(TAG, "relay_pulse_ms = %u", s_relay_pulse_ms);
 }
 
 //

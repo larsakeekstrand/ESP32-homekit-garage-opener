@@ -51,4 +51,18 @@ menu "Example Configuration"
             Seed value for the left-open alert threshold on a fresh device.
             Runtime changes are stored in NVS and take precedence.
 
+    config DOOR_MOVE_TIMEOUT_SEC
+        int "Door-move timeout / auto-close verify window (seconds)"
+        default 8
+        help
+            How long a move may take before the failsafe trusts the sensor. Seed
+            value; runtime changes are stored in NVS and take precedence.
+
+    config RELAY_PULSE_MS
+        int "Relay pulse length (milliseconds)"
+        default 300
+        help
+            How long the relay is held to 'kick' the door. Seed value; runtime
+            changes are stored in NVS and take precedence.
+
 endmenu
