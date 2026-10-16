@@ -43,6 +43,12 @@ BOARD_H = {"DOOR_RELAY_GPIO": ("R1","1"), "DOOR_SENSOR_GPIO": ("R4","2"),
 DNP = {"R8", "R10"}
 # Values the design depends on (boot-glitch fix, relay drive, 5 V margin).
 VALUES = {"R1": "1k", "R2": "4k7", "F1": "1.1A hold", "D1": "SS34", "K1": "SRD-05VDC-SL-C"}
+# Pluggable connectors (enclosure design): power has a different pitch so it can't mate with J3.
+FOOTPRINTS = {
+    "J1": "Connector_Phoenix_MC:PhoenixContact_MC_1,5_2-G-3.81_1x02_P3.81mm_Horizontal",
+    "J2": "Connector_Phoenix_MSTB:PhoenixContact_MSTBA_2,5_3-G-5,08_1x03_P5.08mm_Horizontal",
+    "J3": "Connector_Phoenix_MSTB:PhoenixContact_MSTBA_2,5_2-G-5,08_1x02_P5.08mm_Horizontal",
+}
 
 fails = []
 def check(cond, msg):
@@ -90,6 +96,8 @@ for comp in root.iter("comp"):
         check((base / f"{name}.kicad_mod").is_file(), f"{ref}: footprint {fp} not found")
     if ref in VALUES:
         check(comp.findtext("value") == VALUES[ref], f"{ref}: value {comp.findtext('value')!r}, expected {VALUES[ref]!r}")
+    if ref in FOOTPRINTS:
+        check(fp == FOOTPRINTS[ref], f"{ref}: footprint {fp!r}, expected {FOOTPRINTS[ref]!r}")
     dnp = any(p.get("name") == "dnp" for p in comp.iter("property"))
     check(dnp == (ref in DNP), f"{ref}: dnp={dnp}, expected {ref in DNP}")
 

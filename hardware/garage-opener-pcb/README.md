@@ -30,5 +30,7 @@ flattened derived symbol) is harmless.
 - Power J1 from a **5.1–5.2 V** supply: the Schottky + PTC drop ~0.45 V, and the devkit's LDO needs ~4.3 V.
 - Check whether the devkit has a diode on USB VBUS before using USB and J1 at the same time.
 - Board ID rev 1 = `00` (R9, R11 fitted). Future revisions: fit R8 and/or R10 instead.
+- J1–J3 are pluggable Phoenix-style headers. J1 (power) is 3.81 mm pitch and J2/J3 are 5.08 mm, so the
+  power plug can't go into the reed socket.
 - Relay contacts follow KiCad's SRD symbol (J2: 1 COM, 2 NO, 3 NC). On the first board, confirm
   with a meter that COM–NO is open while the relay is unpowered.

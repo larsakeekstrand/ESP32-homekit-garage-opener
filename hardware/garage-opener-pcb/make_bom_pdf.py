@@ -16,8 +16,14 @@ DNP = [("R8, R10", "10k", "R_0805_2012Metric", "C17414", "Board-ID straps to +3V
 EXTRA = [
     ("1", "ESP32 DevKitC V4 (ESP32-WROOM-32U)", "Plugs into U1. Needs an external 2.4 GHz antenna on its U.FL connector."),
     ("2", "Female header 1x19, 2.54 mm", "U1 sockets (rows 25.4 mm apart)"),
-    ("1", "Female header 1x04, 2.54 mm", "U2 socket for the DHT22 (or solder the sensor directly)"),
-    ("4", "M3 screws + standoffs", "H1–H4"),
+    ("1", "Plug Phoenix MC 1,5/2-ST-3,81 (or 15EDGK clone)", "Mates with J1 (5 V in)"),
+    ("1", "Plug Phoenix MSTB 2,5/2-ST-5,08 (or 2EDGK clone)", "Mates with J3 (reed)"),
+    ("1", "Plug Phoenix MSTB 2,5/3-ST-5,08 (or 2EDGK clone)", "Mates with J2 (relay COM/NO/NC)"),
+    ("1", "U.FL (IPEX1) to SMA-female bulkhead pigtail, ~10 cm + 2.4 GHz SMA antenna", "Antenna through the enclosure wall"),
+    ("8", "M3 heat-set insert, M3×5×4 mm", "Enclosure: 4 for the PCB, 4 for the lid"),
+    ("4", "M3×8 screw", "PCB to base (H1–H4)"),
+    ("4", "M3×10 countersunk screw", "Lid"),
+    ("2", "4 mm wood screw + wall plug", "Wall bracket"),
     ("1", "5.1–5.2 V DC power supply", "Into J1. A plain 5.0 V supply leaves too little margin."),
 ]
 
