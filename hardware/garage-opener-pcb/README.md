@@ -37,6 +37,13 @@ flattened derived symbol) is harmless.
 
 ## PCB
 
+![PCB top](../../docs/PCB_GarageOpener_top.png)
+![PCB 3D](../../docs/PCB_GarageOpener_3d.png)
+
+Renders: `kicad-cli pcb render --side top ...` and `--perspective --rotate '-40,0,30'`. KiCad's stock LED
+model is red (the BOM has green RUN / amber DOOR), U2 shows as a socket (the DHT22 is soldered flat), and
+the devkit has no 3D model.
+
 - `garage-opener-pcb.kicad_pcb` is the source of truth. `tools/layout.py`, `tools/route.py` and
   `tools/silk.py` built rev 1 from scratch. Layout refuses to overwrite without `--force`, which
   discards the routing. `route.py --refill-only` refills the GND pours and adds stitching vias.
