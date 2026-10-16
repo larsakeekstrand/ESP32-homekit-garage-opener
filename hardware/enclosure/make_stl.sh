@@ -10,5 +10,11 @@ for p in $PARTS; do
   "$OSCAD" -q -o "stl/$p.stl" -D "part=\"$p\"" enclosure.scad
   "$OSCAD" -q -o "renders/$p.png" --imgsize=1200,900 --viewall --autocenter --colorscheme=Tomorrow -D "part=\"$p\"" enclosure.scad
 done
+# Reference models (not for printing): every piece incl. the PCB, assembled and exploded. Lazy union keeps the
+# pieces as separate bodies instead of fusing them.
+for p in assembled exploded; do
+  "$OSCAD" --enable=lazy-union --backend=manifold -q -o "stl/assembly_${p#assembled}.stl" -D "part=\"$p\"" enclosure.scad
+done
+mv stl/assembly_.stl stl/assembly.stl
 "$OSCAD" -q -o renders/assembly.png --imgsize=1600,1200 --viewall --autocenter --colorscheme=Tomorrow -D 'part="assembly"' enclosure.scad
 ls stl renders

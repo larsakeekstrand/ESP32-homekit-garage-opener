@@ -199,6 +199,18 @@ module pcb_model() {
   }
 }
 
+// Every piece in place (e = 0), or pulled apart along the way it assembles (e = 1): the bracket stays on the wall,
+// the base slides down onto it from above, the PCB drops into the base, the lid and its buttons come down on top.
+module everything(e) {
+  bracket();
+  translate([0, e * 30, e * 15]) {
+    base();
+    translate([0, 0, e * 30]) pcb_model();
+    translate([0, 0, e * 75]) { lid(); button(btn_boot); button(btn_en, en_recess); }
+    translate([0, 0, e * 95]) for (l = leds) translate([l[1], l[2], lid_top_z - lid_t - 4]) lightpipe();
+  }
+}
+
 if (part == "base") base();
 else if (part == "bracket") bracket();
 else if (part == "lid") lid();
@@ -206,6 +218,8 @@ else if (part == "btn_boot") button(btn_boot);
 else if (part == "btn_en") button(btn_en, en_recess);
 else if (part == "lightpipe") lightpipe();
 else if (part == "fittest") fittest();
+else if (part == "assembled") everything(0);           // reference only, not for printing
+else if (part == "exploded") everything(1);             // reference only, not for printing
 else if (part == "assembly") {
   color("gray") bracket(); color("white", 0.7) base(); pcb_model();
   color("white", 0.5) translate([0, 0, 25]) lid();   // lid lifted 25 mm to show the inside

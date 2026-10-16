@@ -22,6 +22,18 @@ the antenna (SMA) on the right.
 | `lightpipe.stl` | 2 (optional) | flange down, clear or white PLA |
 | `fittest.stl` | 1 | as exported (two strips): print this **first** |
 
+**Reference models, not for printing:**
+- `assembly.stl` has every piece, including the PCB with its components and a stand-in devkit, in its final
+  position, with the box closed on the bracket.
+- `assembly_exploded.stl` has the same pieces pulled apart in the order they go together:
+  1. the bracket on the wall;
+  2. the base sliding down onto it;
+  3. the PCB dropping into the base;
+  4. the lid and buttons on top;
+  5. the light pipes above their holes.
+
+![Exploded](renders/assembly_exploded.png)
+
 All STLs are exported in their assembled position, so turn each one into its print orientation in Bambu Studio.
 
 **Settings (Bambu Lab P1S):** PLA, 0.2 mm layers, 4 walls, 20 % gyroid infill, no supports.
