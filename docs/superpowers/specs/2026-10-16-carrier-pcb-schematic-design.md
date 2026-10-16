@@ -75,10 +75,12 @@ The 3V3 pin is a power *output* (devkit regulator) and 5V is a power *input* (fr
 ### Power
 
 - **J1** — 2-pin 5.0 mm screw terminal, "+5V IN" / "GND".
-- **F1** — 0.5 A hold resettable PTC fuse, 1812.
+- **F1** — 1.1 A hold resettable PTC fuse, 1812 (low resistance, ≈0.1 Ω, to keep 5 V margin; a 0.5 A part
+  drops 0.2–0.3 V at Wi-Fi peaks, more after it has tripped once).
 - **D1** — SS34 Schottky (SMA) in series: reverse-polarity protection, and stops USB VBUS from
-  back-feeding the external supply. Output net **+5V** (≈4.6–4.7 V after the diode drop; enough for the
-  devkit's AMS1117-class LDO and the relay's ≥75 % pull-in voltage).
+  back-feeding the external supply. Output net **+5V** ≈ supply − 0.4 V (Schottky) − ≈0.05 V (PTC) at
+  Wi-Fi peaks. The devkit's AMS1117-class LDO needs ≈4.3 V, so **use a 5.1–5.2 V supply** (e.g. a
+  Raspberry Pi-style 5.1 V adapter); a plain 5.0 V adapter on a long thin cable can brown out.
 - **C1** 100 µF / 16 V electrolytic (radial 6.3 mm) + **C2** 100 nF on +5V.
 - **+5V** feeds U1 5V pin and the relay coil.
 - **+3V3** is taken from U1's 3V3 pin and feeds only the DHT22, pull-ups and ID straps (a few mA).
@@ -177,8 +179,9 @@ KiCad installed with `brew install --cask kicad` (provides `kicad-cli` and the s
 
 ## Bring-up checklist (for the first built board)
 
-1. Without the devkit: apply 5 V to J1 → +5V ≈ 4.6–4.7 V; reverse it → nothing on +5V, no heat.
-2. Fit the devkit, power from J1: relay must not click at power-up. Measure GPIO5 during boot
+1. Without the devkit: apply 5.1 V to J1 → +5V ≈ 4.7 V; reverse it → nothing on +5V, no heat.
+2. Fit the devkit, power from J1: 3V3 pin stays ≥ 3.2 V while Wi-Fi connects (meter min-hold or scope).
+   Relay must not click at power-up. Measure GPIO5 during boot
    (scope, or a meter across repeated EN resets) — must stay < 0.4 V.
 3. With USB also connected (only after checking the devkit's VBUS diode): no back-feed, normal boot.
 4. Unpowered relay: meter COM–NO (J2 1–2) open and COM–NC (J2 1–3) closed — confirms the contact

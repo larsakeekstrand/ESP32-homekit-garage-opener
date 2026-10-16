@@ -41,6 +41,8 @@ USED_U1 = {"1","7","8","14","19","20","22","26","29","31","32","34"}
 BOARD_H = {"DOOR_RELAY_GPIO": ("R1","1"), "DOOR_SENSOR_GPIO": ("R4","2"),
            "DHT_SENSOR_GPIO": ("U2","2"), "RUNNING_LED_GPIO": ("R6","1"), "DOOR_LED_GPIO": ("R7","1")}
 DNP = {"R8", "R10"}
+# Values the design depends on (boot-glitch fix, relay drive, 5 V margin).
+VALUES = {"R1": "1k", "R2": "4k7", "F1": "1.1A hold", "D1": "SS34", "K1": "SRD-05VDC-SL-C"}
 
 fails = []
 def check(cond, msg):
@@ -86,6 +88,8 @@ for comp in root.iter("comp"):
         lib, name = fp.split(":", 1)
         base = PROJ / "lib/garage-opener.pretty" if lib == "garage-opener" else STOCK_FP / f"{lib}.pretty"
         check((base / f"{name}.kicad_mod").is_file(), f"{ref}: footprint {fp} not found")
+    if ref in VALUES:
+        check(comp.findtext("value") == VALUES[ref], f"{ref}: value {comp.findtext('value')!r}, expected {VALUES[ref]!r}")
     dnp = any(p.get("name") == "dnp" for p in comp.iter("property"))
     check(dnp == (ref in DNP), f"{ref}: dnp={dnp}, expected {ref in DNP}")
 

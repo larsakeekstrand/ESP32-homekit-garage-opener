@@ -6,7 +6,7 @@
 "D3","PESD5V0S1BA","Diode_SMD:D_SOD-323","","1"
 "D4","RUN green","LED_THT:LED_D3.0mm","","1"
 "D5","DOOR amber","LED_THT:LED_D3.0mm","","1"
-"F1","0.5A hold","Fuse:Fuse_1812_4532Metric","","1"
+"F1","1.1A hold","Fuse:Fuse_1812_4532Metric","","1"
 "J1","5V IN","TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2_1x02_P5.00mm_Horizontal","","1"
 "J2","OPENER COM/NO/NC","TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-3_1x03_P5.00mm_Horizontal","","1"
 "J3","REED","TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2_1x02_P5.00mm_Horizontal","","1"

@@ -26,6 +26,7 @@ flattened derived symbol) is harmless.
 ## Before ordering a PCB
 
 - Measure the devkit: rows must be 25.4 mm apart (footprint `garage-opener:ESP32-DevKitC-V4_Socket`).
+- Power J1 from a **5.1–5.2 V** supply: the Schottky + PTC drop ~0.45 V, and the devkit's LDO needs ~4.3 V.
 - Check whether the devkit has a diode on USB VBUS before using USB and J1 at the same time.
 - Board ID rev 1 = `00` (R9, R11 fitted). Future revisions: fit R8 and/or R10 instead.
 - Relay contacts follow KiCad's SRD symbol (J2: 1 COM, 2 NO, 3 NC). On the first board, confirm
