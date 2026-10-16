@@ -127,25 +127,30 @@ The checker's net list does not change.
 ### Parts
 
 1. **Wall bracket.** A flat 3 mm plate with two countersunk holes for 4 mm screws, on a vertical
-   line. It has dovetail rails along both long sides, plus a flexible latch tongue at the bottom
-   that snaps into a pocket on the base. To remove the box, push the tongue and slide the box up.
+   line. It has two dovetail rails and a small ramped catch near its bottom edge.
+   *(As built: the flexible part moved into the base, so the bracket prints without supports.)*
 2. **Base.**
    - A tray, with outside size about board + 2×(wall + 1 mm) by height ≈ 38 mm. The height comes
-     from the relay (15.5 mm) or the devkit on its sockets (≈ 8.5 + 1.6 + module), plus 5 mm
-     standoffs.
-   - Dovetail grooves on the back.
+     from the relay (15.5 mm) or the devkit on its sockets (≈ 8.5 socket + 2.5 male-header strip
+     + 1.6 + module), plus 5 mm standoffs.
+   - A solid 4 mm back slab (the base prints lying on it), with the two dovetail grooves cut into it.
+   - Latch: a 10 mm tongue in the back slab, rooted near the top, with 2.4 mm of air behind it. A
+     window near its free end snaps over the bracket's catch. To remove the box, pull the tab under
+     the box away from the wall and lift.
    - Four bosses with M3 heat-set insert holes (Ø4.0 mm, 5 mm deep) under H1–H4.
-   - **Bottom wall:** a cut-out per connector, shaped to the header's opening plus 0.3 mm, so the
-     header faces sit flush.
+   - **Bottom wall:** a cut-out per connector, sized for the mating plug: the header width plus
+     1.5 mm each side, and its height plus 3 mm.
    - **Left wall:** a USB cut-out, sized to the devkit's USB connector plus room for a cable
      overmold (12 × 8 mm).
    - **Right wall:** a D-shaped hole for the SMA bulkhead (6.5 mm with a 5.8 mm flat), so the
      bulkhead can't twist.
    - **DHT corner:** vent slots in the bottom and right walls, plus an internal baffle wall that
      separates the corner from the relay and ESP32 area.
-   - Four corner pillars with M3 insert holes for the lid screws.
+   - No separate lid pillars. The lid screws go through tubes on the lid, through H1–H4, into the
+     boss inserts, clamping the PCB. *(As built: a side strip for pillars would have put the USB
+     socket out of a plug's reach.)*
 3. **Lid.**
-   - Four countersunk M3 holes.
+   - Four countersunk, counterbored M3 holes over the clamping tubes (the screw tip lands 4 mm into the insert).
    - Two Ø3.2 mm LED holes, each with a printed tube that reaches down to 1 mm above D4/D5. The
      tubes stop light bleeding between the LEDs.
    - Two button sleeves above BOOT and EN. EN's sleeve is recessed 1.5 mm so it can't be pressed
@@ -154,21 +159,21 @@ The checker's net list does not change.
    - Debossed labels: RUN, DOOR, BOOT, RST, plus "Garage" on the top.
 4. **Buttons (btn_boot, btn_en).** Separate push-rods with a flange that keeps them captive in
    their sleeve. They reach down to the devkit's tactile switches, with 0.5 mm of clearance at rest.
+   The cap stands 1.5 mm proud of the lid so a press can travel through the gap and the switch.
 5. **Light pipes (optional).** Clear or white PLA plugs for the LED holes.
-6. **Fit-test piece.** A short section of dovetail and latch, plus one connector cut-out, to check
-   tolerances before printing the full box.
+6. **Fit-test piece.** The bottom 16 mm of the base (all three plug cut-outs, the groove mouths, the
+   latch tongue) and of the bracket (rails, catch), to check tolerances before printing the full box.
 
 ### Print notes (README)
 
 - PLA, 0.2 mm layers, 4 walls, 20 % gyroid infill, no supports.
-- Orientation: base open side up; lid outside face down, so the labels sit on the textured plate;
-  bracket flat; buttons standing upright.
+- Orientation: base lying on its back slab; lid outside face down, so the labels sit on the textured
+  plate; bracket wall side down; buttons standing upright.
 
 ### Hardware to buy (README and BOM PDF "also needed")
 
 - U.FL (IPEX1) → SMA-female bulkhead pigtail, about 10 cm, and a 2.4 GHz SMA antenna.
-- 8 × M3 heat-set inserts (M3 × 5 × 4 mm), 4 × M3×8 screws for the board and 4 × M3×10
-  countersunk screws for the lid.
+- 4 × M3 heat-set inserts (M3 × 5 × 4 mm) and 4 × M3×25 countersunk screws (lid + PCB clamp).
 - 2 × 4 mm wall screws and plugs.
 - Mating plugs: MC 1,5/2-ST-3,81 ×1, MSTB 2,5/2-ST-5,08 ×1, MSTB 2,5/3-ST-5,08 ×1.
 
