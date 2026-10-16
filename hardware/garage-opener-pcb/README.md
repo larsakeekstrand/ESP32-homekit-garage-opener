@@ -49,3 +49,4 @@ flattened derived symbol) is harmless.
 - The DHT22 is soldered **flat** (leads bent 90°, grille facing the lid) over the marked keep-out,
   not in a socket.
 - Relay contact tracks are 1 mm wide with 2 mm clearance to everything else (net class `Contact`).
+- Enclosure: `../enclosure/` (generated from this board; rerun its `export_board_dims.py` after moving parts).

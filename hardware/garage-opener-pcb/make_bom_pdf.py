@@ -20,9 +20,8 @@ EXTRA = [
     ("1", "Plug Phoenix MSTB 2,5/2-ST-5,08 (or 2EDGK clone)", "Mates with J3 (reed)"),
     ("1", "Plug Phoenix MSTB 2,5/3-ST-5,08 (or 2EDGK clone)", "Mates with J2 (relay COM/NO/NC)"),
     ("1", "U.FL (IPEX1) to SMA-female bulkhead pigtail, ~10 cm + 2.4 GHz SMA antenna", "Antenna through the enclosure wall"),
-    ("8", "M3 heat-set insert, M3×5×4 mm", "Enclosure: 4 for the PCB, 4 for the lid"),
-    ("4", "M3×8 screw", "PCB to base (H1–H4)"),
-    ("4", "M3×10 countersunk screw", "Lid"),
+    ("4", "M3 heat-set insert, M3×5×4 mm", "Enclosure base bosses under H1–H4"),
+    ("4", "M3×25 countersunk screw", "Lid: through the lid tubes and H1–H4 into the inserts, clamps the PCB"),
     ("2", "4 mm wood screw + wall plug", "Wall bracket"),
     ("1", "5.1–5.2 V DC power supply", "Into J1. A plain 5.0 V supply leaves too little margin."),
 ]
