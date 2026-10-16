@@ -103,6 +103,85 @@ module bracket() {
   echo("FIT", "rail_w", rail_w);
 }
 
+// ---- lid and small parts ----
+led_tube_od = 5.2; led_hole = 3.2; led_dome_z = pcb_t + 5.3;   // LED_D3.0mm sits ~5.3 mm tall
+tube_od = 6.5; screw_d = 3.4;                     // lid tubes over H1..H4: M3 x 25 countersunk screws into the bosses
+btn_d = 4.4; btn_sleeve_od = 7; btn_rest_gap = 0.5; en_recess = 1.5;
+sleeve_bottom_z = pcb_t + stack_h + 0.5;          // the sleeves stay above the devkit's tallest part
+lid_top_z = lid_inner_z + lid_t;
+function btn_xy(o) = [u1_pin19[0] + o[0], u1_pin19[1] + o[1]];
+
+module label(t, x, y, s = 4) {                    // debossed 0.6 mm into the lid's top face, readable from outside
+  translate([x, y, lid_top_z - 0.6]) linear_extrude(0.61)
+    text(t, size = s, halign = "center", valign = "center", font = "Liberation Sans:style=Bold");
+}
+
+module lid() {
+  difference() {
+    union() {
+      rbox(out_x0, out_y0, out_x1, out_y1, lid_inner_z, lid_top_z);
+      // locating lip just inside the base walls
+      difference() {
+        rbox(cav_x0 + slip, cav_y0 + slip, cav_x1 - slip, cav_y1 - slip, lid_inner_z - 2, lid_inner_z + 0.01, 1);
+        rbox(cav_x0 + slip + 1.6, cav_y0 + slip + 1.6, cav_x1 - slip - 1.6, cav_y1 - slip - 1.6, lid_inner_z - 2.1, lid_inner_z + 0.1, 1);
+      }
+      for (h = holes) translate([h[0], h[1], pcb_t]) cylinder(d = tube_od, h = lid_inner_z - pcb_t + 0.01);
+      for (l = leds) translate([l[1], l[2], led_dome_z + 1]) cylinder(d = led_tube_od, h = lid_inner_z - led_dome_z - 1 + 0.01);
+      for (o = [btn_boot, btn_en]) let(q = btn_xy(o)) translate([q[0], q[1], sleeve_bottom_z]) cylinder(d = btn_sleeve_od, h = lid_inner_z - sleeve_bottom_z + 0.01);
+      // DHT baffle from above, along the keep-out's top and left edges, stopping 1 mm over the flat sensor (~9 mm)
+      translate([dht[0] - 1.2, dht[1], pcb_t + 10]) cube([1.2, dht[3] - dht[1], lid_inner_z - pcb_t - 10 + 0.01]);
+      translate([dht[0] - 1.2, dht[3], pcb_t + 10]) cube([dht[2] - dht[0] + 1.2, 1.2, lid_inner_z - pcb_t - 10 + 0.01]);
+    }
+    for (h = holes) translate([h[0], h[1], pcb_t - 1]) {
+      cylinder(d = screw_d, h = 50);
+      translate([0, 0, lid_top_z - pcb_t + 1 - 1.7]) cylinder(d1 = screw_d, d2 = 6.6, h = 1.71);
+    }
+    for (l = leds) translate([l[1], l[2], 0]) cylinder(d = led_hole, h = 50);
+    for (o = [btn_boot, btn_en]) let(q = btn_xy(o)) translate([q[0], q[1], 0]) cylinder(d = btn_d + 2 * slip, h = 50);
+    let(q = btn_xy(btn_en)) translate([q[0], q[1], lid_top_z - en_recess]) cylinder(d = 9, h = 2);   // EN can't be hit by accident
+    for (i = [0:5]) translate([dht[0] + 2 + i * 2.2, dht[1] + 3, lid_inner_z - 1]) cube([1.2, dht[3] - dht[1] - 6, lid_t + 2]);
+    for (i = [0 : len(leds) - 1]) label(leds[i][0], leds[i][1], leds[i][2] + (i == 0 ? -5.5 : 5.5), 3);   // RUN below, DOOR above
+    let(q = btn_xy(btn_boot)) label("BOOT", q[0] + 10, q[1], 3);
+    let(q = btn_xy(btn_en)) label("RST", q[0] + 10.5, q[1], 3);
+    label("GARAGE", (out_x0 + out_x1) / 2 + 10, out_y1 - 10, 7);
+  }
+  echo("FIT", "lid_bottom_z", lid_inner_z);
+  echo("FIT", "led_holes", [for (l = leds) [l[1], l[2]]]);
+  echo("FIT", "btn_holes", [btn_xy(btn_boot), btn_xy(btn_en)]);
+  echo("FIT", "tubes", [for (h = holes) [h[0], h[1]]]);
+  echo("FIT", "tube_bottom_z", pcb_t);
+  echo("FIT", "sleeve_bottom_z", sleeve_bottom_z);
+}
+
+// Push-rod, modelled in place: rests 0.5 mm above the switch, cap on the lid (EN: in its recess). Inserted from
+// outside; the cone below the sleeve snaps through and keeps it captive, the slot lets it squeeze.
+module button(o, recess = 0) {
+  q = btn_xy(o); z0 = pcb_t + btn_top_z + btn_rest_gap; cap_z = lid_top_z - recess;
+  translate([q[0], q[1], 0]) difference() {
+    union() {
+      translate([0, 0, z0]) cylinder(d = btn_d, h = cap_z - z0);
+      translate([0, 0, cap_z]) cylinder(d = btn_d + 2, h = 1.2);
+      translate([0, 0, sleeve_bottom_z - 0.2 - 0.8]) cylinder(d1 = btn_d, d2 = btn_d + 1.2, h = 0.8);
+    }
+    translate([-0.5, -5, z0 - 0.01]) cube([1, 10, sleeve_bottom_z - z0 + 0.5]);
+  }
+  echo("FIT", "rod_bottom_z", z0);
+}
+module lightpipe() { cylinder(d = led_hole - 0.2, h = lid_t + 4); translate([0, 0, lid_t + 4]) cylinder(d = led_hole + 1.5, h = 0.8); }
+module fittest() {   // a slice of the base (groove + J1 cut-out) and of the bracket (rail), printed side by side
+  intersection() { base(); translate([groove_xs[0] - 12, out_y0 - 1, back_z - 1]) cube([30, 22, lid_inner_z - back_z + 2]); }
+  translate([0, -30, 0]) intersection() { bracket(); translate([groove_xs[0] - 12, out_y0 + 4, back_z - 5]) cube([30, 22, 10]); }
+}
+
 if (part == "base") base();
 else if (part == "bracket") bracket();
-else if (part == "assembly") { color("gray") bracket(); color("white", 0.6) base(); color("green") cube([pcb_w, pcb_h, pcb_t]); }
+else if (part == "lid") lid();
+else if (part == "btn_boot") button(btn_boot);
+else if (part == "btn_en") button(btn_en, en_recess);
+else if (part == "lightpipe") lightpipe();
+else if (part == "fittest") fittest();
+else if (part == "assembly") {
+  color("gray") bracket(); color("white", 0.7) base(); color("green") cube([pcb_w, pcb_h, pcb_t]);
+  color("white", 0.5) translate([0, 0, 25]) lid();   // lid lifted 25 mm to show the inside
+  color("orange") { translate([0, 0, 25]) { button(btn_boot); button(btn_en, en_recess); } }
+}

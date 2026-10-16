@@ -60,6 +60,29 @@ g = fit("bracket")
 check(g.get("rail_w") and f and abs(g["rail_w"] - (f["groove_w"] - 2 * PR["dovetail"])) < 1e-6,
       f"bracket rail {g.get('rail_w')} vs base groove {f.get('groove_w') if f else None}: clearance must be {PR['dovetail']} per side")
 
+L = fit("lid")
+check(L, "lid emitted no FIT values")
+if L and f:
+    for (name, x, y), (hx, hy) in zip(B["leds"], L["led_holes"]):
+        check(abs(hx - x) <= 0.5 and abs(hy - y) <= 0.5, f"{name} LED hole at ({hx},{hy}), LED at ({x},{y})")
+    for key, off, (hx, hy) in (("BOOT", D["btn_boot"], L["btn_holes"][0]), ("EN", D["btn_en"], L["btn_holes"][1])):
+        bx, by = B["u1_pin19"][0] + off[0], B["u1_pin19"][1] + off[1]
+        check(abs(hx - bx) <= 0.5 and abs(hy - by) <= 0.5, f"{key} button at ({hx},{hy}), switch at ({bx},{by})")
+    check(abs(L["lid_bottom_z"] - f["lid_inner_z"]) < 1e-6, "lid does not sit on the base walls")
+    # The lid screws clamp the PCB: one tube per hole, ending exactly on the board's top face.
+    check(sorted(map(tuple, L["tubes"])) == sorted(map(tuple, B["holes"])), f"lid tubes {L['tubes']} not over the holes {B['holes']}")
+    check(abs(L["tube_bottom_z"] - B["pcb_t"]) < 1e-6, f"lid tubes end at z={L['tube_bottom_z']}, board top is {B['pcb_t']}")
+    # Button sleeves must stay above the devkit's tallest part; rods must reach the switches.
+    check(L["sleeve_bottom_z"] >= B["pcb_t"] + D["stack_h"] + 0.3, f"button sleeves reach down to {L['sleeve_bottom_z']}, devkit top is {B['pcb_t'] + D['stack_h']}")
+    for key in ("btn_boot", "btn_en"):
+        bf = fit(key)
+        check(abs(bf["rod_bottom_z"] - (B["pcb_t"] + D["btn_top_z"] + 0.5)) < 1e-6, f"{key} rod bottom {bf.get('rod_bottom_z')} is not 0.5 mm above the switch")
+for prt in ("btn_boot", "btn_en", "lightpipe", "fittest"):
+    with tempfile.TemporaryDirectory() as t:
+        rc = subprocess.run([OSCAD, "-o", f"{t}/{prt}.stl", "-D", f'part="{prt}"', str(HERE / "enclosure.scad")],
+                            capture_output=True).returncode
+    check(rc == 0, f"{prt} failed to render")
+
 if fails:
     print("\n".join("FAIL: " + x for x in fails)); sys.exit(1)
 print("FIT OK")
