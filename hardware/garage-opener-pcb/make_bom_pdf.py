@@ -46,14 +46,14 @@ page = f"""<!doctype html><html><head><meta charset="utf-8"><title>BOM — Garag
 <style>
 @page {{ size: A4 portrait; margin: 12mm; }}
 html, body {{ background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
-body {{ font: 9.5pt -apple-system, Helvetica, Arial, sans-serif; color: #16191d; margin: 0; }}
+body {{ font: 8.8pt -apple-system, Helvetica, Arial, sans-serif; color: #16191d; margin: 0; }}
 h1 {{ font-size: 16pt; margin: 0 0 2mm; }}
-h2 {{ font-size: 11pt; margin: 5mm 0 1.5mm; }}
+h2 {{ font-size: 11pt; margin: 3.5mm 0 1mm; }}
 .meta {{ color: #5b6470; margin-bottom: 4mm; }}
 table {{ width: 100%; border-collapse: collapse; }}
 th {{ text-align: left; font-size: 8.5pt; text-transform: uppercase; letter-spacing: .04em; color: #5b6470;
       border-bottom: 1.5px solid #c4cad2; padding: 1.5mm 2mm; }}
-td {{ border-bottom: 1px solid #eaedf1; padding: 1.0mm 2mm; vertical-align: top; }}
+td {{ border-bottom: 1px solid #eaedf1; padding: 0.6mm 2mm; vertical-align: top; }}
 td.n {{ text-align: right; width: 10mm; }}
 td.fp, td.m {{ font: 8.5pt ui-monospace, Menlo, monospace; }}
 tr {{ break-inside: avoid; }}
