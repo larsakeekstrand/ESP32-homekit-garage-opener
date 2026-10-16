@@ -11,7 +11,9 @@ Features:
 * Vacation/lockout switch to refuse all open and close commands.
 * Local status and configuration web page at `http://<device-ip>:8080/`.
 
-Schematics for the hardware can be found [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/478886ba8ccb8f31c0db583b10b282738d822965/docs/Schematic_GarageOpener.pdf). The schematics is made using [EasyEDA](https://easyeda.com/)
+Schematics for the hardware are in [docs/Schematic_GarageOpener.pdf](docs/Schematic_GarageOpener.pdf), drawn in [KiCad](https://www.kicad.org/) — the project (rev 1 carrier PCB for an ESP32 DevKitC V4) is in [hardware/garage-opener-pcb](hardware/garage-opener-pcb), with a bill of materials in [docs/BOM_GarageOpener.pdf](docs/BOM_GarageOpener.pdf). The routed board ([render](docs/PCB_GarageOpener_3d.png)) and Aisler-ready Gerbers are in [hardware/garage-opener-pcb/fab](hardware/garage-opener-pcb/fab), and a 3D-printable wall-mounted enclosure for it is in [hardware/enclosure](hardware/enclosure/README.md).
+
+The STL files below are for the original hand-wired prototype housing.
 
 STL files for the housing can be found [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/2dc0cb2f88ffee0f719a3f48c10d991301077dc2/docs/GarageOpenerTop.stl), [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/2dc0cb2f88ffee0f719a3f48c10d991301077dc2/docs/GarageOpenerBottom.stl) and [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/d89407ebe4e6d4afd1c8a517a600cc80013ba3aa/docs/GarageOpenerBottomButton.stl).
 

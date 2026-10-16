@@ -313,7 +313,7 @@
         <td class="gpio">GPIO5</td>
         <td class="pinlab">IO5</td>
         <td class="note">Relay module <b>IN</b></td>
-        <td class="note">Pulsed ~300 ms to kick the door. <b>Relay VDD → 5V</b>, relay GND → GND. Old board pulls the relay EN to VDD via 20 kΩ (R3) — keep it if your carrier has it.</td>
+        <td class="note">Pulsed ~300 ms to kick the door. <b>Relay VDD → 5V</b>, relay GND → GND. The old prototype has a 20 kΩ (R3) from GPIO5 to GND. The rev 1 PCB (hardware/garage-opener-pcb) drives the relay through a transistor with a 4.7 kΩ pull-down so it cannot click during boot.</td>
       </tr>
       <tr>
         <td><span class="fn"><span class="sw" style="background:var(--reed)"></span>Reed door sensor</span></td>

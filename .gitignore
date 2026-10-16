@@ -7,3 +7,10 @@ sdkconfig.old
 sdkconfig
 # Rust CLI build output
 tools/garage-push/target/
+
+# KiCad local state
+*.kicad_prl
+fp-info-cache
+*-backups/
+hardware/garage-opener-pcb/tools/.route/
+__pycache__/
