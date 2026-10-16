@@ -22,7 +22,7 @@ EXTRA = [
     ("1", "U.FL (IPEX1) to SMA-female bulkhead pigtail, ~10 cm + 2.4 GHz SMA antenna", "Antenna through the enclosure wall"),
     ("4", "M3 heat-set insert, M3×5×4 mm", "Enclosure base bosses under H1–H4"),
     ("4", "M3×25 countersunk screw", "Lid: through the lid tubes and H1–H4 into the inserts, clamps the PCB"),
-    ("2", "4 mm wood screw + wall plug", "Wall bracket"),
+    ("2", "4 mm pan-head wood screw (head ≤ Ø8 × 3.2 mm) + wall plug", "Wall: the enclosure hangs on them by its keyholes"),
     ("1", "5.1–5.2 V DC power supply", "Into J1. A plain 5.0 V supply leaves too little margin."),
 ]
 

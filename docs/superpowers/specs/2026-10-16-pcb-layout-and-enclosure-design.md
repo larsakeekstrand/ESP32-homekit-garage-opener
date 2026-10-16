@@ -20,6 +20,8 @@ Builds on: `2026-10-16-carrier-pcb-schematic-design.md` (the rev 1 carrier schem
   button and its **USB** port are reachable.
 - Antenna: a **SMA bulkhead** on the case wall, fed by a U.FL→SMA pigtail from the WROOM-32U.
 - Mounting: a separate **wall bracket**; the box slides onto it and latches.
+  *(As built: two **keyholes** in the back instead. The dovetails and latch needed supports that
+  couldn't be removed; the box now hangs on two pan-head wall screws.)*
 - Firmware stays untouched.
 
 ## Constraints
@@ -114,29 +116,29 @@ The checker's net list does not change.
 ### Source
 
 - `enclosure.scad`: one parametric file. A `part` variable selects
-  `bracket | base | lid | btn_boot | btn_en | lightpipe | fittest | assembly`.
+  `base | lid | btn_boot | btn_en | lightpipe | fittest | template | assembly`.
 - `board_dims.scad`: **generated** by `export_board_dims.py` from the `.kicad_pcb`. It holds the
   board size, hole positions, connector positions and widths, LED and DHT positions, and the U1
   position.
 - `devkit_dims.scad`: hand-written values for the devkit (USB position and size, BOOT/EN button
   positions, U.FL position, the height above the carrier). These are **parameters to measure** on
   the real devkit; defaults come from Espressif's DevKitC V4 drawing.
-- `params.scad`: print tolerances. Defaults: 0.3 mm slip fit, 0.2 mm dovetail, 2.4 mm walls,
-  2.0 mm floor and lid.
+- `params.scad`: print tolerances. Defaults: 0.3 mm slip fit, 2.4 mm walls,
+  2.0 mm floor and lid, and the wall screw (Ø4 shank, Ø8 × 3.2 mm pan head).
 
 ### Parts
 
-1. **Wall bracket.** A flat 3 mm plate with two countersunk holes for 4 mm screws, on a vertical
-   line. It has two dovetail rails and a small ramped catch near its bottom edge.
-   *(As built: the flexible part moved into the base, so the bracket prints without supports.)*
+1. **Wall mounting.** *(As built: no bracket.)* Two keyholes in the back of the base, 64 mm apart
+   near the top. Each is a Ø9 hole the screw head passes through, a 4.5 mm neck slot next to the
+   wall running 10 mm up from it, and a Ø9 head channel behind the 2 mm neck, open to the cavity.
+   Printed back-down, the channel only steps outwards, so nothing overhangs. A flat drilling
+   template (`template`) has the box outline and a hole where each screw ends up.
 2. **Base.**
    - A tray, with outside size about board + 2×(wall + 1 mm) by height ≈ 38 mm. The height comes
      from the relay (15.5 mm) or the devkit on its sockets (≈ 8.5 socket + 2.5 male-header strip
      + 1.6 + module), plus 5 mm standoffs.
-   - A solid 4 mm back slab (the base prints lying on it), with the two dovetail grooves cut into it.
-   - Latch: a 10 mm tongue in the back slab, rooted near the top, with 2.4 mm of air behind it. A
-     window near its free end snaps over the bracket's catch. To remove the box, pull the tab under
-     the box away from the wall and lift.
+   - A solid 4 mm back slab (the base prints lying on it), with the two keyholes cut into it and
+     the floor.
    - Four bosses with M3 heat-set insert holes (Ø4.0 mm, 5 mm deep) under H1–H4.
    - **Bottom wall:** a cut-out per connector, sized for the mating plug: the header width plus
      1.5 mm each side, and its height plus 3 mm.
@@ -161,20 +163,20 @@ The checker's net list does not change.
    their sleeve. They reach down to the devkit's tactile switches, with 0.5 mm of clearance at rest.
    The cap stands 1.5 mm proud of the lid so a press can travel through the gap and the switch.
 5. **Light pipes (optional).** Clear or white PLA plugs for the LED holes.
-6. **Fit-test piece.** The bottom 16 mm of the base (all three plug cut-outs, the groove mouths, the
-   latch tongue) and of the bracket (rails, catch), to check tolerances before printing the full box.
+6. **Fit-test piece.** The bottom 16 mm of the base (all three plug cut-outs) and a coupon of the
+   back around one keyhole, to check the plugs and the screw before printing the full box.
 
 ### Print notes (README)
 
 - PLA, 0.2 mm layers, 4 walls, 20 % gyroid infill, no supports.
 - Orientation: base lying on its back slab; lid outside face down, so the labels sit on the textured
-  plate; bracket wall side down; buttons standing upright.
+  plate; template flat; buttons standing upright.
 
 ### Hardware to buy (README and BOM PDF "also needed")
 
 - U.FL (IPEX1) → SMA-female bulkhead pigtail, about 10 cm, and a 2.4 GHz SMA antenna.
 - 4 × M3 heat-set inserts (M3 × 5 × 4 mm) and 4 × M3×25 countersunk screws (lid + PCB clamp).
-- 2 × 4 mm wall screws and plugs.
+- 2 × 4 mm pan-head wall screws (head ≤ Ø8 × 3.2 mm) and wall plugs.
 - Mating plugs: MC 1,5/2-ST-3,81 ×1, MSTB 2,5/2-ST-5,08 ×1, MSTB 2,5/3-ST-5,08 ×1.
 
 ### Checks
@@ -187,7 +189,9 @@ The checker's net list does not change.
   - each connector cut-out spans its connector's width;
   - each LED hole lies within 0.5 mm of its LED in X/Y;
   - each button rod lies within 0.5 mm of its switch;
-  - the lid's inner surface clears the tallest part by ≥1 mm.
+  - the lid's inner surface clears the tallest part by ≥1 mm;
+  - nothing in the back of the base or the fit-test piece faces down (no supports), and the
+    keyholes fit the wall screw and match the drilling template.
 - An `assembly` render shows the PCB's STEP outline in place, for visual review.
 
 ## Bring-up / acceptance

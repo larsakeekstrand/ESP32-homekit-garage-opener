@@ -5,7 +5,7 @@ set -eu
 cd "$(dirname "$0")"
 OSCAD=${OSCAD:-$(command -v openscad || echo /Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD)}
 mkdir -p stl renders
-PARTS=${*:-"bracket base lid btn_boot btn_en lightpipe fittest"}
+PARTS=${*:-"base lid btn_boot btn_en lightpipe fittest template"}
 for p in $PARTS; do
   "$OSCAD" -q -o "stl/$p.stl" -D "part=\"$p\"" enclosure.scad
   "$OSCAD" -q -o "renders/$p.png" --imgsize=1200,900 --viewall --autocenter --colorscheme=Tomorrow -D "part=\"$p\"" enclosure.scad
@@ -17,4 +17,5 @@ for p in assembled exploded; do
 done
 mv stl/assembly_.stl stl/assembly.stl
 "$OSCAD" -q -o renders/assembly.png --imgsize=1600,1200 --viewall --autocenter --colorscheme=Tomorrow -D 'part="assembly"' enclosure.scad
+"$OSCAD" -q -o renders/assembly_exploded.png --imgsize=1600,1200 --viewall --autocenter --colorscheme=Tomorrow --camera=0,0,0,60,0,35,0 -D 'part="exploded"' enclosure.scad
 ls stl renders

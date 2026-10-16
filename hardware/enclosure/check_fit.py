@@ -66,37 +66,54 @@ if f:
     for i, (hx, hy) in enumerate(B["holes"]):
         check(any(abs(bx - hx) < 1e-6 and abs(by - hy) < 1e-6 for bx, by in f.get("bosses", [])), f"no PCB boss under H{i + 1}")
 
-g = fit("bracket")
-check(g.get("rail_w") and f and abs(g["rail_w"] - (f["groove_w"] - 2 * PR["dovetail"])) < 1e-6,
-      f"bracket rail {g.get('rail_w')} vs base groove {f.get('groove_w') if f else None}: clearance must be {PR['dovetail']} per side")
-
-# 2: the latch tongue must clear its catch when pulled within its air gap, and must clear it while the box slides on.
-lt, ca = (f.get("latch") if f else None), g.get("catch")
-check(lt and ca, "latch/catch geometry not reported")
-if lt and ca:
-    root, w0, w1, tip, air = lt; c0, c1, ch = ca
-    a, Lt = abs(w0 - root), abs(tip - root)
-    ratio = a * a * (3 * Lt - a) / (2 * Lt ** 3)          # cantilever deflection at a / at the tip, tip-loaded
-    check(w0 + 0.1 <= c0 and c1 <= w1 - 0.1, f"catch {c0}..{c1} does not sit inside the tongue window {w0}..{w1}")
-    check(ch <= air - 0.4, f"catch height {ch} leaves no room in the {air} mm air gap while sliding on")
-    check(ratio * air >= ch + 0.2, f"pulling the tab to the end of its {air} mm travel moves the window only {ratio * air:.2f} mm; catch is {ch} mm")
-
-def downward_facets_above_bed(part, flip=False, limit=-0.75):
-    """Area (mm^2) of facets facing down steeper than ~49 deg that are not on the bed: what would need supports."""
+def downward_facets_above_bed(part, limit=-0.75, below=1e9):
+    """Area (mm^2) of facets facing down steeper than ~49 deg that are not on the bed (and start less than `below`
+    above it): what would need supports."""
     with tempfile.TemporaryDirectory() as t:
         subprocess.run([OSCAD, "-o", f"{t}/p.stl", "-D", f'part="{part}"', str(HERE / "enclosure.scad")], capture_output=True)
         tri = [tuple(map(float, m)) for m in re.findall(r"vertex\s+(\S+)\s+(\S+)\s+(\S+)", Path(f"{t}/p.stl").read_text())]
-    if flip: tri = [(x, y, -z) for x, y, z in tri]
     bed = min(v[2] for v in tri); area = 0.0
     for i in range(0, len(tri), 3):
         (ax, ay, az), (bx, by, bz), (cx, cy, cz) = tri[i:i + 3]
         ux, uy, uz, vx, vy, vz = bx - ax, by - ay, bz - az, cx - ax, cy - ay, cz - az
         nx, ny, nz = uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx
         n = (nx * nx + ny * ny + nz * nz) ** 0.5
-        if n and nz / n < limit and min(az, bz, cz) > bed + 0.05: area += n / 2
+        if n and nz / n < limit and bed + 0.05 < min(az, bz, cz) < bed + below: area += n / 2
     return area
-ov = downward_facets_above_bed("bracket")
-check(ov < 1.0, f"bracket printed back-down has {ov:.0f} mm^2 of unsupported downward faces")
+# The base and the fittest print lying on their backs. Nothing in the back material (back slab + floor) may face
+# down: that is where supports would end up inside slots you can't reach. (Bridges over the cut-outs in the side
+# walls are higher up and print without supports.)
+check(f and f.get("back"), "base reports no back thickness")
+if f and f.get("back"):
+    back_top = f["back"][1] - f["back"][0]
+    for prt in ("base", "fittest"):
+        ov = downward_facets_above_bed(prt, limit=-0.5, below=back_top)
+        check(ov < 0.5, f"{prt} printed back-down has {ov:.0f} mm^2 of overhang in its back: needs supports")
+
+# Keyholes: the box hangs on two pan-head wall screws. Each keyhole is a round hole the head passes through, a
+# narrow slot above it towards the wall (the neck the head hooks behind) and a wider head channel behind the neck.
+kh = f.get("keyholes") if f else None
+check(kh and len(kh) == 2, f"expected two keyholes, got {kh}")
+if kh:
+    hole_d, slot_w, neck_t, chan_d = f["kh_dims"]
+    sd, hd, hh = PR["wall_screw_d"], PR["wall_screw_head_d"], PR["wall_screw_head_h"]
+    check(slot_w >= sd + 0.3, f"keyhole slot {slot_w} too narrow for the {sd} mm screw")
+    check((hd - slot_w) / 2 >= 1.5, f"keyhole slot {slot_w}: the {hd} mm head hooks only {(hd - slot_w) / 2:.2f} mm each side")
+    check(hole_d >= hd + 0.6, f"keyhole hole {hole_d} too small for the {hd} mm head")
+    check(neck_t >= 2.0, f"keyhole neck {neck_t} mm is too thin to hang the box on")
+    check(chan_d >= hh + 0.5, f"keyhole head channel {chan_d} mm deep, the head is {hh} mm tall")
+    (x0, yh0, yr0), (x1, yh1, yr1) = kh
+    check(abs(yh0 - yh1) < 1e-6 and abs(yr0 - yr1) < 1e-6 and abs(x1 - x0) >= 40, f"keyholes {kh} must be level and >= 40 mm apart")
+    for x, yh, yr in kh:
+        check(yr - yh >= (hole_d + hd) / 2, f"keyhole at x={x}: the resting head overlaps the hole (travel {yr - yh})")
+        for bx, by in B["holes"]:   # the head channel opens into the cavity: keep it clear of the 7 mm PCB bosses
+            dx = max(0, abs(bx - x) - hole_d / 2); dy = max(0, yh - hole_d / 2 - by, by - yr - hole_d / 2)
+            check((dx * dx + dy * dy) ** 0.5 >= 3.5 + 0.5, f"keyhole at x={x} runs into the PCB boss at ({bx},{by})")
+        check(not (B["dht"][0] - 1.2 - hole_d / 2 < x < B["dht"][2] + hole_d / 2 and yh - hole_d / 2 < B["dht"][3] + 1.2),
+              f"keyhole at x={x} runs into the DHT baffle")
+    T = fit("template")
+    check(T and sorted(map(tuple, T.get("holes", []))) == sorted((x, yr) for x, _, yr in kh),
+          f"drilling template holes {T.get('holes')} don't match where the screws rest {[(x, yr) for x, _, yr in kh]}")
 
 L = fit("lid")
 check(L, "lid emitted no FIT values")
@@ -120,7 +137,7 @@ if L and f:
         check(abs(bf["rod_bottom_z"] - (B["pcb_t"] + D["btn_top_z"] + 0.5)) < 1e-6, f"{key} rod bottom {bf.get('rod_bottom_z')} is not 0.5 mm above the switch")
         # 1: pressing the cap must be able to move the rod past the 0.5 mm rest gap and through the switch travel
         check(bf.get("cap_bottom_z", 0) - bf.get("face_z", 0) >= 0.5 + 1.0, f"{key}: cap rests {bf.get('cap_bottom_z', 0) - bf.get('face_z', 0):.2f} mm above the lid, the rod can't reach the switch")
-for prt in ("btn_boot", "btn_en", "lightpipe", "fittest"):
+for prt in ("btn_boot", "btn_en", "lightpipe", "fittest", "template"):
     with tempfile.TemporaryDirectory() as t:
         rc = subprocess.run([OSCAD, "-o", f"{t}/{prt}.stl", "-D", f'part="{prt}"', str(HERE / "enclosure.scad")],
                             capture_output=True).returncode
