@@ -9,3 +9,4 @@ insert_d = 4.0;    // M3 heat-set insert hole (M3 x 5 x 4 mm inserts)
 insert_h = 5.5;    // hole depth (insert length + 0.5)
 corner_r = 3.0;    // outer corner radius
 $fn = 48;
+lid_screw_len = 25;  // M3 countersunk lid screws; the lid counterbores the heads so the tips land 4 mm into the inserts
