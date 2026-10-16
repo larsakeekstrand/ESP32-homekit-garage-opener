@@ -83,7 +83,7 @@ def zone(rect, layerset, rule_area, net=None):
         z.SetIsRuleArea(True); z.SetDoNotAllowFootprints(True); z.SetDoNotAllowTracks(False)
         z.SetDoNotAllowVias(False); z.SetDoNotAllowPads(False); z.SetDoNotAllowZoneFills(False); z.SetZoneName("DHT22 body")
     else:
-        z.SetNet(net); z.SetLocalClearance(p.FromMM(0.3)); z.SetMinThickness(p.FromMM(0.25))
+        z.SetNet(net); z.SetIslandRemovalMode(p.ISLAND_REMOVAL_MODE_ALWAYS); z.SetLocalClearance(p.FromMM(0.3)); z.SetMinThickness(p.FromMM(0.25))
         z.SetPadConnection(p.ZONE_CONNECTION_THERMAL); z.SetThermalReliefGap(p.FromMM(0.4))
         z.SetThermalReliefSpokeWidth(p.FromMM(0.6))
     board.Add(z); return z

@@ -89,7 +89,22 @@ if u:
 check(any(all(abs(a - b) < 0.2 for a, b in zip(rel(k[0], k[1]) + rel(k[2], k[3]), DHT_KEEPOUT)) for k in g["keepouts"]),
       "DHT22 keep-out rule area missing or misplaced")
 
+def drc_rules_load():
+    """KiCad silently ignores the whole .kicad_dru when any rule fails to parse. Append a rule that must fire
+    (every track narrower than 50 mm) in a scratch copy of the project and confirm DRC reports it."""
+    import shutil
+    with tempfile.TemporaryDirectory() as tmp:
+        for ext in ("kicad_pcb", "kicad_pro", "kicad_dru"):
+            shutil.copy(PROJ / f"garage-opener-pcb.{ext}", Path(tmp) / f"garage-opener-pcb.{ext}")
+        dru = Path(tmp) / "garage-opener-pcb.kicad_dru"
+        dru.write_text(dru.read_text() + "(rule \"probe\" (condition \"A.Type == 'Track'\") (constraint track_width (min 50mm)))\n")
+        rpt = Path(tmp) / "probe.json"
+        subprocess.run(["kicad-cli", "pcb", "drc", "--severity-error", "--format", "json", "-o", str(rpt),
+                        str(Path(tmp) / "garage-opener-pcb.kicad_pcb")], capture_output=True)
+        return any(v["type"] == "track_width" for v in json.loads(rpt.read_text())["violations"])
+
 if "--placement-only" not in sys.argv:
+    check(drc_rules_load(), "garage-opener-pcb.kicad_dru does not parse: KiCad ignores all custom rules")
     with tempfile.TemporaryDirectory() as tmp:
         rpt = Path(tmp) / "drc.json"
         subprocess.run(["kicad-cli", "pcb", "drc", "--schematic-parity", "--severity-error", "--format", "json",

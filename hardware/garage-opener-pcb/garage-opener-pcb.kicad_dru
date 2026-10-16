@@ -1,6 +1,6 @@
 (version 1)
 (rule "relay contacts: 2 mm from everything else"
-  (condition "A.NetName =~ 'Net-(J2-Pin_*' && B.NetName != A.NetName")
+  (condition "A.NetClass == 'Contact' && A.NetName != B.NetName")
   (constraint clearance (min 2.0mm)))
 (rule "power track width"
   (condition "A.Type == 'Track' && (A.NetName == '+5V' || A.NetName == 'GND' || A.NetName == 'Net-(D2-A)' || A.NetName == 'Net-(J1-Pin_1)' || A.NetName == 'Net-(D1-A)')")
@@ -9,5 +9,8 @@
   (condition "A.Type == 'Track' && A.NetName == '+3V3'")
   (constraint track_width (min 0.5mm)))
 (rule "contact track width"
-  (condition "A.Type == 'Track' && A.NetName =~ 'Net-(J2-Pin_*'")
+  (condition "A.Type == 'Track' && A.NetClass == 'Contact'")
   (constraint track_width (min 1.0mm)))
+(rule "GND pads also connect through the other pour, so one spoke is enough"
+  (condition "A.NetName == 'GND'")
+  (constraint min_resolved_spokes 1))
