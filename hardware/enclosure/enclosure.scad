@@ -173,6 +173,22 @@ module fittest() {   // a slice of the base (groove + J1 cut-out) and of the bra
   translate([0, -30, 0]) intersection() { bracket(); translate([groove_xs[0] - 12, out_y0 + 4, back_z - 5]) cube([30, 22, 10]); }
 }
 
+// ---- for the assembly render only ----
+// The PCB with its components, from kicad-cli's STL export (page coords: X = page X, Y = -page Y, Z = 0 at the
+// board underside; the board's top-left corner is at page (100, 100)), plus a stand-in for the devkit, which
+// has no 3D model: two sockets, its PCB, the WROOM-32U module and the USB receptacle.
+module pcb_model() {
+  color("green") translate([-100, 100 + pcb_h, 0]) import("../garage-opener-pcb/fab/garage-opener-pcb.stl");
+  dk_x0 = u1_pin19[0] - 3.18; dk_y1 = u1_pin1[1] + 1.25; dk_len = 54.4; dk_w = 27.9;
+  color("black") for (y = [u1_pin1[1], u1_pin1[1] - 25.4]) translate([u1_pin19[0] - 1.27, y - 1.27, pcb_t]) cube([u1_pin1[0] - u1_pin19[0] + 2.54, 2.54, socket_h]);
+  translate([dk_x0, dk_y1 - dk_w, pcb_t + socket_h]) {
+    color("royalblue") cube([dk_len, dk_w, devkit_t]);
+    color("silver") translate([dk_len - 19.2, (dk_w - 18) / 2, devkit_t]) cube([18.4, 18, 3.2]);          // WROOM-32U
+    color("silver") translate([0, u1_pin19[1] + usb_dy - (dk_y1 - dk_w) - usb_w / 2, devkit_t]) cube([5.5, usb_w, usb_hgt]);
+    for (o = [btn_boot, btn_en]) color("dimgray") translate([u1_pin19[0] + o[0] - dk_x0 - 1.5, u1_pin19[1] + o[1] - (dk_y1 - dk_w) - 2, devkit_t]) cube([3, 4, btn_top_z - socket_h - devkit_t]);
+  }
+}
+
 if (part == "base") base();
 else if (part == "bracket") bracket();
 else if (part == "lid") lid();
@@ -181,7 +197,7 @@ else if (part == "btn_en") button(btn_en, en_recess);
 else if (part == "lightpipe") lightpipe();
 else if (part == "fittest") fittest();
 else if (part == "assembly") {
-  color("gray") bracket(); color("white", 0.7) base(); color("green") cube([pcb_w, pcb_h, pcb_t]);
+  color("gray") bracket(); color("white", 0.7) base(); pcb_model();
   color("white", 0.5) translate([0, 0, 25]) lid();   // lid lifted 25 mm to show the inside
   color("orange") { translate([0, 0, 25]) { button(btn_boot); button(btn_en, en_recess); } }
 }
