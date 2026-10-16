@@ -181,6 +181,7 @@ KiCad installed with `brew install --cask kicad` (provides `kicad-cli` and the s
 2. Fit the devkit, power from J1: relay must not click at power-up. Measure GPIO5 during boot
    (scope, or a meter across repeated EN resets) — must stay < 0.4 V.
 3. With USB also connected (only after checking the devkit's VBUS diode): no back-feed, normal boot.
-4. Trigger the door from HomeKit/web UI → single relay click, COM–NO closes for the pulse length.
+4. Unpowered relay: meter COM–NO (J2 1–2) open and COM–NC (J2 1–3) closed — confirms the contact
+   mapping. Then trigger the door from HomeKit/web UI → single relay click, COM–NO closes for the pulse length.
 5. Open/close the reed → door state follows; DOOR LED mirrors it.
 6. Web UI shows plausible temperature/humidity from the on-board DHT22.
