@@ -11,7 +11,7 @@ Features:
 * Vacation/lockout switch to refuse all open and close commands.
 * Local status and configuration web page at `http://<device-ip>:8080/`.
 
-Schematics for the hardware are in [docs/Schematic_GarageOpener.pdf](docs/Schematic_GarageOpener.pdf), drawn in [KiCad](https://www.kicad.org/) — the project (rev 1 carrier PCB for an ESP32 DevKitC V4) is in [hardware/garage-opener-pcb](hardware/garage-opener-pcb).
+Schematics for the hardware are in [docs/Schematic_GarageOpener.pdf](docs/Schematic_GarageOpener.pdf), drawn in [KiCad](https://www.kicad.org/) — the project (rev 1 carrier PCB for an ESP32 DevKitC V4) is in [hardware/garage-opener-pcb](hardware/garage-opener-pcb), with a bill of materials in [docs/BOM_GarageOpener.pdf](docs/BOM_GarageOpener.pdf).
 
 STL files for the housing can be found [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/2dc0cb2f88ffee0f719a3f48c10d991301077dc2/docs/GarageOpenerTop.stl), [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/2dc0cb2f88ffee0f719a3f48c10d991301077dc2/docs/GarageOpenerBottom.stl) and [here](https://github.com/larsakeekstrand/ESP32-homekit-garage-opener/blob/d89407ebe4e6d4afd1c8a517a600cc80013ba3aa/docs/GarageOpenerBottomButton.stl).
 

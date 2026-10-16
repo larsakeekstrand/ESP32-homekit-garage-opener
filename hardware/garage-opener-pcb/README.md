@@ -7,7 +7,8 @@ board-ID straps. The GPIO map is identical to the prototype (`main/board.h`), so
 and OTA image run on both.
 
 - Schematic: `garage-opener-pcb.kicad_sch` (PDF: `../../docs/Schematic_GarageOpener.pdf`)
-- BOM: `bom.csv` (DNP parts excluded). U1 is the devkit itself; its footprint needs two
+- BOM: `bom.csv` (DNP parts excluded); printable version `../../docs/BOM_GarageOpener.pdf`,
+  regenerated with `python3 make_bom_pdf.py` after re-exporting `bom.csv`. U1 is the devkit itself; its footprint needs two
   1x19 2.54 mm female headers, which are not a separate BOM line.
 - Design + bring-up checklist: `../../docs/superpowers/specs/2026-10-16-carrier-pcb-schematic-design.md`
 
