@@ -34,3 +34,18 @@ flattened derived symbol) is harmless.
   power plug can't go into the reed socket.
 - Relay contacts follow KiCad's SRD symbol (J2: 1 COM, 2 NO, 3 NC). On the first board, confirm
   with a meter that COM–NO is open while the relay is unpowered.
+
+## PCB
+
+- `garage-opener-pcb.kicad_pcb` is the source of truth. `tools/layout.py`, `tools/route.py` and
+  `tools/silk.py` built rev 1 from scratch. Layout refuses to overwrite without `--force`, which
+  discards the routing. `route.py --refill-only` refills the GND pours and adds stitching vias.
+- Check after any edit: `python3 check_pcb.py`. It checks placement, connector/USB orientation and
+  the silkscreen labels, that the custom rules in `garage-opener-pcb.kicad_dru` load, DRC, unconnected
+  items and schematic parity.
+- Fab files: `sh fab.sh`, then upload `fab/garage-opener-pcb-gerbers.zip` to Aisler (2 layers,
+  1.6 mm, HASL). Aisler also accepts the `.kicad_pcb` directly. `fab/` also has a STEP model and an STL;
+  the enclosure scripts read the STL.
+- The DHT22 is soldered **flat** (leads bent 90°, grille facing the lid) over the marked keep-out,
+  not in a socket.
+- Relay contact tracks are 1 mm wide with 2 mm clearance to everything else (net class `Contact`).

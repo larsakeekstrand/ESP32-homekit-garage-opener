@@ -97,6 +97,7 @@
 		(property "Reference" "J1"
 			(at 1.9 -3 0)
 			(layer "F.SilkS")
+			(hide yes)
 			(uuid "799c4f64-7896-4173-bc04-d13969ed94cb")
 			(effects
 				(font
@@ -454,7 +455,7 @@
 		(descr "Two 1x19 2.54 mm female sockets, rows 25.4 mm apart, for ESP32-DevKitC V4 (WROOM-32U). Fab outline approximate (54.4 x 27.9 mm): measure the real board.")
 		(tags "ESP32 DevKitC socket")
 		(property "Reference" "U1"
-			(at 12.7 -8 270)
+			(at 12.7 21.2 270)
 			(layer "F.SilkS")
 			(uuid "33b4ddbf-5348-4391-8d64-b39fbf44ac27")
 			(effects
@@ -1508,6 +1509,7 @@
 		(property "Reference" "J3"
 			(at 2.54 -3.2 0)
 			(layer "F.SilkS")
+			(hide yes)
 			(uuid "41e36aa6-1d17-46e1-96f3-3250cf6cf725")
 			(effects
 				(font
@@ -2872,12 +2874,12 @@
 		(descr "Resistor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf)")
 		(tags "resistor")
 		(property "Reference" "R8"
-			(at 0 -1.65 90)
+			(at 3.2 0 0)
 			(layer "F.SilkS")
 			(uuid "f98e5aba-d24c-409f-a87b-379d1f2b91c8")
 			(effects
 				(font
-					(size 1 1)
+					(size 0.8 0.8)
 					(thickness 0.15)
 				)
 			)
@@ -3289,6 +3291,7 @@
 		(property "Reference" "D5"
 			(at 1.27 -2.96 0)
 			(layer "F.SilkS")
+			(hide yes)
 			(uuid "c75b8c05-c71e-43fc-979f-819dcefa37e2")
 			(effects
 				(font
@@ -3615,12 +3618,12 @@
 		(descr "Resistor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf)")
 		(tags "resistor")
 		(property "Reference" "R9"
-			(at 0 -1.65 90)
+			(at 3.2 0 0)
 			(layer "F.SilkS")
 			(uuid "8b31eab0-18d0-4f6c-afd8-a4bd72577973")
 			(effects
 				(font
-					(size 1 1)
+					(size 0.8 0.8)
 					(thickness 0.15)
 				)
 			)
@@ -3762,7 +3765,7 @@
 		(descr "relay Sanyou SRD series Form C http://www.sanyourelay.ca/public/products/pdf/SRD.pdf")
 		(tags "relay Sanyu SRD form C")
 		(property "Reference" "K1"
-			(at 8.1 9.2 270)
+			(at 8.5 0 270)
 			(layer "F.SilkS")
 			(uuid "d67448c5-e490-4503-bf0f-33bafe743c26")
 			(effects
@@ -6389,12 +6392,12 @@
 		(descr "Resistor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf)")
 		(tags "resistor")
 		(property "Reference" "R10"
-			(at 0 -1.65 90)
+			(at 3.2 0 0)
 			(layer "F.SilkS")
 			(uuid "fd00b5ca-d9ed-481b-ac7b-1d15b31ebe58")
 			(effects
 				(font
-					(size 1 1)
+					(size 0.8 0.8)
 					(thickness 0.15)
 				)
 			)
@@ -6686,6 +6689,7 @@
 		(property "Reference" "D4"
 			(at 1.27 -2.96 0)
 			(layer "F.SilkS")
+			(hide yes)
 			(uuid "bbc14870-7fac-496b-b434-7d235e04524a")
 			(effects
 				(font
@@ -6907,6 +6911,7 @@
 		(property "Reference" "J2"
 			(at 5.08 -3.2 0)
 			(layer "F.SilkS")
+			(hide yes)
 			(uuid "8b3220b8-90dd-4e3f-9fad-2adb033b61c9")
 			(effects
 				(font
@@ -7383,12 +7388,12 @@
 		(descr "Resistor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf)")
 		(tags "resistor")
 		(property "Reference" "R11"
-			(at 0 -1.65 90)
+			(at 3.2 0 0)
 			(layer "F.SilkS")
 			(uuid "c3d9cd48-fd57-428a-a21c-62b2ea5e68ad")
 			(effects
 				(font
-					(size 1 1)
+					(size 0.8 0.8)
 					(thickness 0.15)
 				)
 			)
@@ -7947,6 +7952,127 @@
 		)
 		(layer "Edge.Cuts")
 		(uuid "6b2ca7bb-be2d-4459-a86d-5e2e99cf3a1e")
+	)
+	(gr_text "RUN"
+		(at 107.27 143 0)
+		(layer "F.SilkS")
+		(uuid "373febc2-ea6a-4e21-b37a-f977da0c9634")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(gr_text "garage-opener"
+		(at 110 157 0)
+		(layer "F.SilkS")
+		(uuid "21b2c9ee-8459-4bdc-be25-fafa235f48ef")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(gr_text "rev 1"
+		(at 110 159 0)
+		(layer "F.SilkS")
+		(uuid "de5eda6d-71d9-45ba-8a7c-86fd96935160")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(gr_text "DOOR"
+		(at 113.77 143 0)
+		(layer "F.SilkS")
+		(uuid "9f19480d-cec8-4517-992e-f6ca9eebe3c9")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(gr_text "+"
+		(at 122 158.16 0)
+		(layer "F.SilkS")
+		(uuid "19992128-1a22-4035-aadc-6159b62af3f0")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(gr_text "5V IN"
+		(at 123.905 156.36 0)
+		(layer "F.SilkS")
+		(uuid "c4ffc929-abf9-4579-84f0-5a491e61577a")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(gr_text "-"
+		(at 125.81 158.16 0)
+		(layer "F.SilkS")
+		(uuid "f177220c-43d0-4481-aafa-0738ad4de506")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(gr_text "REED"
+		(at 142.54 155.56 0)
+		(layer "F.SilkS")
+		(uuid "c83e04dd-d1a8-4f64-bbde-e16f5c46febc")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(gr_text "COM"
+		(at 158 155.56 0)
+		(layer "F.SilkS")
+		(uuid "b638d7a1-4c26-468c-9dab-c355682ee9d7")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(gr_text "NO"
+		(at 163.08 155.56 0)
+		(layer "F.SilkS")
+		(uuid "0f2c2788-bc3c-4d74-b0f2-51e69f6ba213")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(gr_text "NC"
+		(at 168.16 155.56 0)
+		(layer "F.SilkS")
+		(uuid "ad4910fb-e22c-4786-94f9-18c97bc54388")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
 	)
 	(segment
 		(start 118.8625 145)

@@ -89,6 +89,11 @@ if u:
 check(any(all(abs(a - b) < 0.2 for a, b in zip(rel(k[0], k[1]) + rel(k[2], k[3]), DHT_KEEPOUT)) for k in g["keepouts"]),
       "DHT22 keep-out rule area missing or misplaced")
 
+# Board-level silkscreen labels (written by tools/silk.py).
+SILK = {"5V IN", "COM", "NO", "NC", "REED", "RUN", "DOOR", "rev 1"}
+missing = {x for x in SILK if not any(x in t for t in g.get("texts", []))}
+check(not missing, f"silkscreen labels missing: {sorted(missing)}")
+
 def drc_rules_load():
     """KiCad silently ignores the whole .kicad_dru when any rule fails to parse. Append a rule that must fire
     (every track narrower than 50 mm) in a scratch copy of the project and confirm DRC reports it."""
